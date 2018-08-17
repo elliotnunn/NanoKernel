@@ -1,7 +1,7 @@
 ; Legacy 68k Virtual Memory interface, accessed via 68k FE0A trap
 
 kMaxVirtualSegments equ 4
-kMinIOSegment equ 9
+kMinIOSegment equ 8
 
 ########################################################################
 
@@ -405,16 +405,59 @@ VMMakePageCacheable ; page a0/r4
     cmpwi   r7, M68pdCacheNotIO
     bc      BO_IF_NOT, bM68pdResident, vmRetNeg1            ; not resident!
     beq     vmRet                                           ; already write-through
-    bc      BO_IF_NOT, cr4_lt, vmRetNeg1                    ; not a paged area, so fail!
+    bc      BO_IF_NOT, cr4_lt, vmMakePageCacheableForIO     ; not a paged area, so for I/O
 
     bcl     BO_IF_NOT, bM68pdInHTAB, QuickCalcPTE           ; need to have a PPC PTE
 
     rlwinm  r16, r16, 0, ~(M68pdCacheinhib | M68pdCacheNotIO)
     rlwinm  r9, r9,  0, ~(LpteWritethru | LpteInhibcache)
+    lwz     r7, KDP.PageAttributeInit(r1)
+    rlwimi  r9, r7, 0, LpteMemcoher | LpteGuardwrite
     ori     r16, r16, M68pdCacheNotIO
     bl      SavePTEAnd68kPD
 
     b       vmRet
+
+vmMakePageCacheableForIO ; need to edit a PMDT directly (code copied from VMMakePageWriteThrough below!)
+    rlwinm  r7, r4, 16, 0xF
+    cmpwi   r7, kMinIOSegment
+    blt     vmRetNeg1
+
+    bc      BO_IF_NOT, bM68pdCacheinhib, vmRetNeg1          ; I/O space is always cache-inhibited
+
+    lwz     r5, PMDT.Size + PMDT.Word2(r15)                 ; take over the following PMDT if
+    andi.   r6, r5, EveryPattr                              ; it is "available"
+    cmpwi   r6, PMDT_Available
+    beq     @next_pmdt_free
+
+; no free PMDT... hijack the previous one if it is PMDT_PTE_Range
+    subi    r15, r15, PMDT.Size
+    lwz     r5, PMDT.Word2(r15)
+    lhz     r6, PMDT.PageIdx(r15)
+    andi.   r5, r5, Pattr_NotPTE | Pattr_PTE_Single
+    lhz     r5, PMDT.PageCount(r15)
+    bne     vmRetNeg1                                       ; demand PMDT_PTE_Range
+    addi    r5, r5, 1
+    add     r6, r6, r5
+    xor     r6, r6, r4
+    andi.   r6, r6, 0xffff                                  ; does the previous PMDT abut this one?
+    bne     vmRetNeg1
+    sth     r5, PMDT.PageCount(r15)
+    b       vmCleanupTrashedPMDT
+
+@next_pmdt_free ; so replace it with copy of current one, then turn current one into PMDT_PTE_Range
+    lwz     r5, 0(r15)                                      ; copy current PMDT to next
+    lwz     r6, 4(r15)
+    stw     r5, PMDT.Size + 0(r15)
+    stw     r6, PMDT.Size + 4(r15)
+
+    slwi    r5, r4, 16                                      ; PMDT PageIdx=this, PageCount=single
+    stw     r5, 0(r15)
+    slwi    r5, r4, 12                                      ; PMDT RPN = logical address of page
+    ori     r5, r5, LpteP0                                  ; and raise these flags too
+    stw     r5, PMDT.Word2(r15)
+
+    b       vmCleanupTrashedPMDT
 
 ########################################################################
 
@@ -550,14 +593,16 @@ VMMakePageNonCacheable ; page a0/r4
 ; 68k: M68pdCacheNotIO(CM0)=0, M68pdCacheinhib(CM1)=0 ["Noncachable"]
     bl      PageInfo
     rlwinm  r7, r16, 0, M68pdCacheNotIO | M68pdCacheinhib
-    cmpwi   r7, M68pdCacheNotIO | M68pdCacheinhib   ; these should both end up set
+    cmpwi   r7, M68pdCacheNotIO | M68pdCacheinhib           ; these should both end up set
     bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
     beq     vmRet
-    bc      BO_IF_NOT, cr4_lt, vmRetNeg1            ; not a paged area
+    bc      BO_IF_NOT, cr4_lt, vmMakePageNonCacheableForIO  ; not a paged area, so for I/O
 
     bcl     BO_IF_NOT, bM68pdInHTAB, QuickCalcPTE
 
     rlwinm  r9, r9,  0, ~(LpteWritethru | LpteInhibcache)
+    lwz     r7, KDP.PageAttributeInit(r1)
+    rlwimi  r9, r7, 0, LpteMemcoher | LpteGuardwrite
     ori     r16, r16, M68pdCacheNotIO | M68pdCacheinhib
     ori     r9, r9, LpteInhibcache
 
@@ -577,6 +622,55 @@ vmFlushPageAndReturn ; When making page write-though or noncacheable
     dcbf    r7, r5
     bne     @loop
     b       vmRet
+
+########################################################################
+
+vmMakePageNonCacheableForIO
+    rlwinm  r7, r4, 16, 0xF
+    cmpwi   r7, kMinIOSegment
+    blt     vmRetNeg1
+
+    bc      BO_IF, bM68pdCacheinhib, vmRetNeg1  ; I/O space is always cache-inhibited
+
+    lwz     r5, PMDT.Word2(r15)                 ; only if page unity mapped
+    srwi    r6, r5, 12                          ; (i.e. logical = physical)
+    cmpw    r6, r4
+    bne     vmRetNeg1
+
+    lis     r7, 0                               ; unclear significance
+    lis     r8, 0
+    lis     r9, 0
+
+    srwi    r6, r5, 12
+    lhz     r8, PMDT.PageCount(r15)
+    lhz     r7, PMDT.PageIdx(r15)
+    addi    r6, r6, 1
+
+    cmpwi   r8, 0
+    beq     @onepage
+
+; many page ; preserve this PMDT but chop off its first page (this one)
+    addi    r7, r7, 1
+    subi    r8, r8, 1
+    rlwimi  r5, r6, 12, 0xFFFFF000
+    sth     r7, PMDT.PageIdx(r15)
+    sth     r8, PMDT.PageCount(r15)
+    stw     r5, PMDT.Word2(r15)
+    b       vmCleanupTrashedPMDT
+
+@onepage ; move the next PMDT leftwards to overwrite this slot
+    lis     r6, 0
+    lwz     r7, PMDT.Size + 0(r15)
+    lwz     r8, PMDT.Size + 4(r15)
+    lis     r5, 0
+    ori     r6, r6, PMDT_Available
+    stw     r7, 0(r15)
+    stw     r8, 4(r15)
+    stw     r5, PMDT.Size + 0(r15)
+    stw     r6, PMDT.Size + 4(r15)
+
+    dcbf    0, r15
+    b       vmCleanupTrashedPMDT
 
 ########################################################################
 
