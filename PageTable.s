@@ -545,7 +545,7 @@ GetPhysicalFromHTAB ; EA r27 // PA r31, EQ=Fail
 
 FlushTLB
     lhz     r29, KDP.ProcInfo.TransCacheTotalSize(r1)
-    slwi    r29, r29, 11
+    slwi    r29, r29, 12
 @loop
     subi    r29, r29, 4096
     cmpwi   r29, 0
