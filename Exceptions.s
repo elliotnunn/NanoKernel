@@ -64,7 +64,7 @@ ExceptionCommon
     lwz     r4, CB.IntraState.HandlerArg+4(r6)      ; r4 = arbitrary second argument
     lwz     r3, KDP.SysContextPtrLogical(r1)        ; r3 = ContextBlock ptr
     bc      BO_IF, bGlobalFlagSystem, @sys
-    lwz     r3, KDP.NCBCacheLA0(r1)
+    lwz     r3, KDP.NatContextPtrLogical(r1)
 @sys
     lwz     r12, KDP.EmuTrapTableLogical(r1)        ; r12/LR = address of KCallReturnFromException trap
 

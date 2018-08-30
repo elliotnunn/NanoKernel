@@ -104,6 +104,7 @@ KCallRunAlternateContext ; CB r3, flags r4
 @slot1 ; so promote to slot 0, save elsewhere, and push on
     lwz     r8, KDP.NCBCacheLA0(r1)
     stw     r9, KDP.NCBCacheLA0(r1)
+    stw     r9, KDP.NatContextPtrLogical(r1)
     stw     r8, KDP.NCBCacheLA1(r1)
     lwz     r9, KDP.NCBCachePA1(r1)
     lwz     r8, KDP.NCBCachePA0(r1)

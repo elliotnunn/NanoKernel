@@ -346,6 +346,7 @@ FloatScratch            ds.d    1   ; 5a0:5a8
 
     ORG 0x5b0
 IntHandlerPtr           ds.l    1   ; 5b0
+NatContextPtrLogical    ds.l    1   ; 5b4
 
     ORG 0x5c0
 FloatTemp1              ds.l    1   ; 5c0
