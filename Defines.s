@@ -344,9 +344,6 @@ VecTblMemRetry          ds  VecTbl  ; 4e0:5a0 ; kernel MemRetry code
 
 FloatScratch            ds.d    1   ; 5a0:5a8
 
-    ORG 0x5b0
-PhysicalPageArray       ds.l    4   ; 5b0:5c0 ; actually one ptr per segment
-
     ORG 0x5c0
 FloatTemp1              ds.l    1   ; 5c0
 FloatTemp2              ds.l    1   ; 5c4
@@ -392,6 +389,10 @@ HTABORG                 ds.l    1   ; 6a4
 VMLogicalPages          ds.l    1   ; 6a8 ; size of VM Manager's address space
 VMPhysicalPages         ds.l    1   ; 6ac ; how many pages VM Manager may use
 VMPageArray             ds.l    1   ; 6b0 ; array of 68k Page Descriptors
+VMMaxVirtualPages       ds.l    1   ; 6b4 ; largest VM area that the PageMap allows
+
+    ORG 0x6c0
+PhysicalPageArray       ds.l    16  ; 6c0:700 ; actually one ptr per segment
 
     ORG 0x700
 CrashTop

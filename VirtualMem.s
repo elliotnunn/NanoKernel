@@ -144,9 +144,12 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
     bne     @pageloop
 
 @skip_segment ; because PMDT is not paged
+    lwz     r7, KDP.VMMaxVirtualPages(r1)
     addi    r5, r5, 1
-    cmpwi   r5, kMaxVirtualSegments
-    bne     @segloop
+    subi    r7, r7, 1
+    srwi    r7, r7, 16
+    cmpw    r5, r7
+    ble     @segloop
 
     lwz     r7, KDP.VMPhysicalPages(r1)     ; (final check: did we actually iterate over every page in the VM area?)
     cmpw    r4, r7
@@ -158,7 +161,7 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
     andi.   r7, r5, 0xfff                   ; If new VMPageArray is not page-aligned...
     li      r3, 2
     bne     @fail                           ;    ...fail 2
-    lis     r7, kMaxVirtualSegments         ; If new VM area is too big ...
+    lwz     r7, KDP.VMMaxVirtualPages(r1)   ; If new VM area is too big ...
     cmplw   r7, r4
     li      r3, 3
     blt     @fail                           ;    ...fail 3
@@ -228,20 +231,24 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
     bgt     @checkloop
 
 ; Point the paged PMDTs in the PageMap to the new VMPageArray
-    lwz     r6, KDP.CurSpace.SegMapPtr(r1)  ; Clear the first two PMDTs of segs 0-3
-    li      r9, 0
-    ori     r7, r9, 0xffff                  ; (first word: whole-segment)
+    lwz     r9, KDP.VMMaxVirtualPages(r1)   ; Clear the first two PMDTs of every
+    lwz     r6, KDP.CurSpace.SegMapPtr(r1)  ; seg up to max size, allowing for a
+    subi    r9, r9, 1                       ; partial seg at the end.
     li      r8, PMDT_InvalidAddress         ; (second word: PMDT_InvalidAddress)
+    ori     r7, r8, 0xffff                  ; (first word: whole-segment)
+
 @pmdtresetloop
+    cmplwi  r9, 0xffff
     lwz     r3, 0(r6)
     addi    r6, r6, 8
     stw     r7, 0(r3)
     stw     r8, 4(r3)
     stw     r7, 8(r3)
     stw     r8, 12(r3)
-    addi    r9, r9, 1
-    cmpwi   r9, kMaxVirtualSegments - 1
-    ble     @pmdtresetloop
+    subis   r9, r9, 1
+    bgt     @pmdtresetloop
+    sth     r9, PMDT.PageCount(r3)
+    sth     r9, PMDT.Size + PMDT.PageCount(r3)
 
     lwz     r6, KDP.CurSpace.SegMapPtr(r1)  ; Edit PMDTs to point to the new PD Array
     lwz     r9, KDP.VMLogicalPages(r1)
@@ -866,7 +873,7 @@ VMAllocateMemory ; first_page a0/r4, page_count a1/r5, align_mask d1/r6
 @exitpageloop ; cr6_eq = !(can be discontiguous)
 
 ; Fail if the requested area is in VM reserved segments, or sized > 4 GB
-    lis     r9, kMaxVirtualSegments
+    lwz     r9, KDP.VMMaxVirtualPages(r1)
     cmplw   cr7, r7, r9
     rlwinm. r9, r7, 0, 0xFFF00000
     blt     cr7, vmRetNeg1
@@ -914,22 +921,12 @@ VMAllocateMemory ; first_page a0/r4, page_count a1/r5, align_mask d1/r6
     stw     r8, KDP.SysInfo.LogicalMemorySize(r1)
 
 ; Because we rearranged the VMPageArray, rewrite the VM area PMDTs
-    addi    r14, r1, KDP.SegMaps-8
-    lwz     r15, KDP.VMPageArray(r1)
-    li      r8, 0                           ; r8 = upper PMDT denoting whole-segment
-    subi    r7, r7, 1
-    ori     r8, r8, 0xffff
-@nextseg
-    cmplwi  r7, 0xffff
-    lwzu    r16, 8(r14)
-    rotlwi  r9, r15, 10
-    ori     r9, r9, PMDT_Paged
-    stw     r8, 0(r16)                      ; PMDT.PageIdx/PageCount = whole segment
-    stw     r9, PMDT.Word2(r16)
-    addis   r15, r15, 4
-    subis   r7, r7, 1
-    bgt     @nextseg
-    sth     r7, PMDT.PageCount(r16)         ; (last segment is partial)
+    lwz     r7, KDP.VMMaxVirtualPages(r1)
+    li      r8, PMDT_InvalidAddress
+    bl      ResetPagedPMDTsForVMAlloc
+    lwz     r7, KDP.VMPhysicalPages(r1)
+    li      r8, PMDT_Paged
+    bl      ResetPagedPMDTsForVMAlloc
 
     b       vmRet1
 
@@ -963,6 +960,28 @@ ReclaimLeftoverFromVMAlloc ; 68kpds_to_steal r15 // 68kpds_to_steal r15
     stwu    r16, 4(r7)                      ; we know that the physical pages
     addi    r16, r16, 0x1000                ; are contiguous.
     bgt     @stolenfillloop
+    blr     
+
+ResetPagedPMDTsForVMAlloc ; page_count r7, pmdt_flags r8
+    addi    r14, r1, KDP.SupervisorSegMap - 8
+    lwz     r15, KDP.VMPageArray(r1)
+    subi    r7, r7, 1
+    li      r9, 0
+    ori     r9, r9, 0xffff
+    cmpwi   cr7, r8, PMDT_Paged
+@loop
+    cmplwi  r7,  0xffff
+    lwzu    r16, 8(r14)
+    bne     cr7, @notpaged
+    rotlwi  r8, r15, 10
+    ori     r8, r8, PMDT_Paged
+@notpaged
+    stw     r9, 0(r16)                      ; PMDT.PageIdx/PMDT.PageCount
+    stw     r8, 4(r16)                      ; PMDT.Word2
+    addis   r15, r15, 4
+    subis   r7, r7, 1
+    bgt     @loop
+    sth     r7, PMDT.PageCount(r16)         ; (last segment is partial)
     blr     
 
 ########################################################################
@@ -1009,7 +1028,7 @@ PageInfo
     bl      CrashVirtualMem                 ; (But crash if PTE is invalid)
 
 @outside_vm_area ; Code outside VM Manager address space
-    lis     r9, kMaxVirtualSegments         ; Check that page is outside VM Manager's segments
+    lwz     r9, KDP.VMMaxVirtualPages(r1)   ; Check that page is outside VM Manager's segments
     cmplw   cr4, r4, r9                     ; but still a valid page number (i.e. < 0x100000)
     rlwinm. r9, r4, 0, 0xFFF00000
     blt     cr4, vmRetNeg1                  ; (else return -1 from VM call)

@@ -258,6 +258,27 @@ ResetAddressSpaceRecords
 
 ########################################################################
 
+GetMaxVirtualPagesFromPageMap
+    li      r22, 0
+    addi    r19, r1, KDP.SegMaps - 8
+@nextseg
+    lwzu    r8, 8(r19)          ; get ptr to first PMDT of next segment
+    lwz     r30, 0(r8)          ; PMDT.PageIdx/PMDT.PageCount
+    lwz     r31, 4(r8)          ; PMDT.Word2 (for testing flags)
+
+    cmplwi  cr7, r30, 0xffff
+    rlwinm. r31, r31, 0, PMDT_Paged
+    bgt     cr7, @done          ; if PMDT.PageIdx > 0, stop counting
+    beq     @done               ; if not PMDT_Paged, stop counting (odd check!)
+
+    add     r22, r22, r30
+    addi    r22, r22, 1         ; add one more page because PMDT.PageCount is 0-based
+    beq     cr7, @nextseg       ; if PMDT.PageCount < 256 MB, this is last segment
+@done
+    stw     r22, KDP.VMMaxVirtualPages(r1)
+
+########################################################################
+
 Reset68kPageDescriptors
 ; Create a 68k PTE for every page in the initial logical area.
 ; (The logical area will equal physical RAM size, so make a PTE for
@@ -307,7 +328,13 @@ Reset68kPageDescriptors
 PlacePagedArea
 ; Overwrite the dummy (first) PMDT in every logical-area segment (0-3)
 ; to point into the logical-area 68k PTE array
+    lwz     r8, KDP.VMMaxVirtualPages(r1)       ; Limit size of logical area!
     subf    r22, r21, r29
+    slwi    r8, r8, 2
+    cmplw   r22, r8
+    blt     @useallpages
+    subi    r22, r8, 4
+@useallpages
     li      r30, 0
     addi    r19, r22, 4
     slwi    r19, r19, 10
