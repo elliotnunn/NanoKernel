@@ -475,6 +475,8 @@ VMMakePageWriteThrough ; page a0/r4
 
     rlwinm  r16, r16, 0, ~(M68pdCacheNotIO | M68pdCacheinhib)
     rlwinm  r9, r9, 0, ~(LpteWritethru | LpteInhibcache)
+    lwz     r7, KDP.PageAttributeInit(r1)
+    rlwimi  r9, r7, 0, LpteMemcoher | LpteGuardwrite
     ori     r9, r9, LpteWritethru
     bl      SavePTEAnd68kPD
 
@@ -1194,7 +1196,7 @@ QuickCalcPTE
 vmInitGetPhysical
     addi    r8, r1, KDP.PhysicalPageArray
     lwz     r9, KDP.VMPhysicalPages(r1)
-    rlwimi  r8, r7, 18, 28, 29
+    rlwimi  r8, r7, 18, 26, 29
     cmplw   r7, r9
     lwz     r8, 0(r8)
     rlwinm  r7, r7, 2, 0xFFFF * 4
