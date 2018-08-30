@@ -378,6 +378,10 @@ PrimeHTAB
 
 ########################################################################
 
+    bl      InitEmulation ; of illegal instructions
+
+########################################################################
+
 ; Restore the fixedpt exception register (clobbered by addic)
     mtxer   rXER
 

@@ -75,6 +75,7 @@ maskMsrFlags  equ 0x00000F00
     ; Bits 24-31 (CR6-CR7) Other Context Flags:
     _bitequate 26, ContextFlagTraceWhenDone    ; raised when MSR[SE] is up but we get an unrelated interrupt
     _bitequate 27, ContextFlagMemRetryErr      ; raised when an exception is raised during MemRetry
+    _bitequate 29, ContextFlagEmulateAll       ; allow every known emulation
     _bitequate 31, ContextFlagResumeMemRetry   ; allows MemRetry to be resumed (raised by userspace?)
 
 ########################################################################
@@ -84,6 +85,22 @@ mrSkipInstLoad      equ cr3_lt ; misalignment handler can get what it needs from
 mrXformIgnoreIdxReg equ cr3_gt ; instruction is X-form but without an rB field
 mrSuppressUpdate    equ cr3_eq ; instruction may not update base reg in-place
 mrChangedRegInEWA   equ cr3_so ; have "loaded" a new reg value (i.e. saved into EWA)
+
+########################################################################
+
+; Unsupported instruction emulation: flags
+    _bitequate 8,  EmAllowMQ
+    _bitequate 9,  EmAllowRTC
+    _bitequate 10, EmAllowDEC
+    _bitequate 11, EmAllowHarmless
+    _bitequate 12, EmAllowCacheInfo
+    _bitequate 13, EmAllowMemRetry
+    _bitequate 14, EmAllowUsrSPRs
+
+    _bitequate 14, EmAlways1
+    _bitequate 15, EmAlways2
+    _bitequate 18, EmHasMMCR0
+    _bitequate 19, EmHasMMCR1
 
 ########################################################################
 
@@ -347,6 +364,8 @@ FloatScratch            ds.d    1   ; 5a0:5a8
     ORG 0x5b0
 IntHandlerPtr           ds.l    1   ; 5b0
 NatContextPtrLogical    ds.l    1   ; 5b4
+InstEmControl           ds.l    1   ; 5b8 ; fourth byte is rounded-down binary log of dec speed, first byte is 32 - that
+InstEmTimebaseScale     ds.l    1   ; 5bc
 
     ORG 0x5c0
 FloatTemp1              ds.l    1   ; 5c0
