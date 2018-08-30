@@ -39,6 +39,7 @@ GetExtIntHandler
     dc.w    ExternalInt0 - @table           ; 0
     dc.w    ExtIntHandlerPDM - @table       ; 1
     dc.w    ExtIntHandlerTNT - @table       ; 2
+    dc.w    ExtIntHandlerPBX - @table       ; 3
     align   2
 @tableend
     mflr    r7              ; r7 points to @table now
@@ -199,6 +200,79 @@ ExtIntHandlerPDM
 
 @clear
     lwz     r2, KDP.ClearIntMask(r1)    ; Clear interrupt flag in CR
+    and     r0, r0, r2
+    b       @return
+
+########################################################################
+
+    _align kExternalIntAlign
+ExtIntHandlerPBX
+    mfsprg  r1, 0                           ; Init regs and increment ctr
+    dcbz    0, r1
+    stw     r0, KDP.r0(r1)
+    stw     r2, KDP.r2(r1)
+    lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
+    stw     r3, KDP.r3(r1)
+    addi    r2, r2, 1
+    stw     r2, KDP.NKInfo.ExternalIntCount(r1)
+
+    lis     r2, 0x50F3                      ; Query OpenPIC at 50F2A000
+    mfmsr   r3
+    stw     r4, KDP.r4(r1)
+    mfsrr0  r4
+    stw     r5, KDP.r5(r1)
+    mfsrr1  r5
+    stw     r6, KDP.r6(r1)
+    mfspr   r6, dbat0u
+    stw     r7, KDP.r7(r1)
+    mfspr   r7, dbat0l
+
+    ori     r0, r2, 3
+    mtspr   dbat0u, r0
+    ori     r0, r2, 0x2A
+    mtspr   dbat0l, r0
+    ori     r0, r3, 0x10
+    mtmsr   r0
+    isync
+
+    li      r0, 0xC0
+    stw     r0, -0x6000(r2)
+    eieio
+    lwz     r2, -0x6000(r2)
+    mtmsr   r3
+    isync
+
+    mtspr   dbat0l, r7
+    lwz     r7, KDP.r7(r1)
+    mtspr   dbat0u, r6
+    lwz     r6, KDP.r6(r1)
+    mtsrr1  r5
+    lwz     r5, KDP.r5(r1)
+    mtsrr0  r4
+    lwz     r4, KDP.r4(r1)
+
+    mfcr    r0
+    lwz     r3, KDP.EmuIntLevelPtr(r1)
+    clrlwi. r2, r2, 29
+    sth     r2, 0(r3)
+    mfsprg  r2, 2
+    lwz     r3, KDP.r3(r1)
+    mtlr    r2
+    beq     @clear                          ; 0 -> clear interrupt
+                                            ; nonzero -> post interrupt
+
+    lwz     r2, KDP.PostIntMask(r1)         ; Post an interrupt via Cond Reg
+    or      r0, r0, r2
+
+@return
+    mtcr    r0                              ; Set CR and return
+    lwz     r0, KDP.r0(r1)
+    lwz     r2, KDP.r2(r1)
+    mfsprg  r1, 1
+    rfi
+
+@clear
+    lwz     r2, KDP.ClearIntMask(r1)        ; Clear an interrupt via Cond Reg
     and     r0, r0, r2
     b       @return
 
