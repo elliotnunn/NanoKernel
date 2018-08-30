@@ -11,7 +11,6 @@ CrashExceptions
 CrashSoftInts
 CrashVirtualMem
     include 'Crash.s'
-    include 'ExternalInts.s'
     include 'HotInts.s'
     _align 10
 MRBase
@@ -29,3 +28,4 @@ MRBase
     include 'SoftInts.s'
     include 'VirtualMem.s'
     include 'Power.s'
+    include 'ExternalInts.s'
