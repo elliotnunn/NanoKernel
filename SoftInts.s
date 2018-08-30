@@ -271,9 +271,9 @@ ProgramInt
     ;   SUCCESSFUL TRAP from outside emulator KCall table
     ;   => Service call then return to following instruction
     add     r8, r8, r1
-    lwz     r10, KDP.NKInfo.NanoKernelCallCounts(r8)
-    addi    r10, r10, 1
-    stw     r10, KDP.NKInfo.NanoKernelCallCounts(r8)
+    lwz     r9, KDP.NKInfo.NanoKernelCallCounts(r8)
+    addi    r9, r9, 1
+    stw     r9, KDP.NKInfo.NanoKernelCallCounts(r8)
     lwz     r8, KDP.KCallTbl(r8)
     mtlr    r8
     addi    r10, r10, 4             ; continue executing the next instruction
