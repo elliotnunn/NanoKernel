@@ -224,20 +224,28 @@ ExtIntHandlerTNT
     _ori    r3, r0, MsrDR
     stw     r4, KDP.r4(r1)
     stw     r5, KDP.r5(r1)
+    stw     r6, KDP.r6(r1)
     mfsrr0  r4
     mfsrr1  r5
     mtmsr   r3                  ; enable data address translation
     isync
     lis     r3, 0x8000
-    stw     r3, 0x28(r2)        ; write ifMode1Clear flag to interrupt clear register
+    li      r6, 0x28            ; r6 - offset to interrupt clear register
+    stwbrx  r3, r6, r2          ; write byte-reversed ifMode1Clear flag
     eieio
-    lwz     r3, 0x2C(r2)        ; read interrupt levels register
+    li      r6, 0x24            ; r6 - offset to interrupt mask register
+    lwbrx   r3, r6, r2
+    li      r6, 0x2C            ; r6 - offset to interrupt levels register
+    lwbrx   r6, r6, r2          ; r3 = READ_LE_DWORD(GC[IntLevels] &
+    and     r3, r6, r3          ;      READ_LE_DWORD(GC[IntMask])
+    eieio
     mtmsr   r0                  ; disable data address translation
     isync
     mtsrr0  r4
     mtsrr1  r5
     lwz     r4, KDP.r4(r1)
     lwz     r5, KDP.r5(r1)
+    lwz     r6, KDP.r6(r1)
 
     mfcr    r0                  ; reset CR
 
@@ -250,12 +258,12 @@ ExtIntHandlerTNT
     li      r2, 4               ; will get the priority level 4
     bne     @gotnum
 
-    rlwinm. r2, r3, 0, 18, 18   ; Ethernet MACE is the only device allowed to
+    rlwinm. r2, r3, 0, 17, 17   ; Ethernet MACE is the only device allowed to
     li      r2, 3               ; interrupt at level 3
     bne     @gotnum
 
     andis.  r2, r3, 0x7FEA      ; all other devices including SCSI, PCI, Audio,
-    rlwimi. r2, r3, 0, 19, 20   ; Floppy etc. except VIA1
+    rlwimi. r2, r3, 0, 18, 19   ; Floppy etc. except VIA1
     li      r2, 2               ; will get the priority level 2
     bne     @gotnum
 
