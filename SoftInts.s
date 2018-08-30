@@ -207,7 +207,7 @@ KCallSystemCrash
 
 ########################################################################
 
-    _align kSoftIntAlign
+    _align 6
 ProgramInt
 ;   (also called when the Alternate Context gets an External Int => Exception)
 
