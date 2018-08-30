@@ -120,11 +120,10 @@ MRLoad2
     insrwi  r21, r23, 16, 16
 
 MRDoSecondary
-    sync
+    bl      SetMSRFlush
     rlwinm. r28, r17, 18,25,29 ; get the block-offset of rA
     mtlr    r25
     cror    cr0_eq, cr0_eq, mrSuppressUpdate
-    mtmsr   r14
     mtsprg  3, r24
     beqlr
     crset   mrChangedRegInEWA       ; do this only if it's a non-zero register and we aren't suppressing update

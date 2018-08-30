@@ -181,3 +181,14 @@ AlignmentInt ; to MemRetry! (see MROptab.s for register info)
     mtmsr   r14
     isync
     blr
+
+########################################################################
+
+SetMSRFlush
+    sync
+    mtmsr   r14
+    isync
+    mflr    r23
+    icbi    0, r23
+    isync
+    blr
