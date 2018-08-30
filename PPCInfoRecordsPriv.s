@@ -100,7 +100,7 @@ NKSystemInfoPtr			equ		$5FFFEFF0	; logical address of NKSystemInfo record
 NKSystemInfoVer			equ		$5FFFEFF4	; version number of NKSystemInfo record
 NKSystemInfoLen			equ		$5FFFEFF6	; length of NKSystemInfo record
 
-kSystemInfoVer			equ		$0102
+kSystemInfoVer			equ		$0103
 
 NKSystemInfo			record	0,increment
 PhysicalMemorySize		ds.l	1			; 000 ; Number of bytes in Physical RAM
@@ -155,9 +155,29 @@ Bank14Start				ds.l	1			; 0a0 ; Starting address of RAM bank 14
 Bank14Size				ds.l	1			; 0a4 ; Number of bytes in  RAM bank 14
 Bank15Start				ds.l	1			; 0a8 ; Starting address of RAM bank 15
 Bank15Size				ds.l	1			; 0ac ; Number of bytes in  RAM bank 15
+Bank16Start				ds.l	1			; 0b0 ; Starting address of RAM bank 16
+Bank16Size				ds.l	1			; 0b4 ; Number of bytes in  RAM bank 16
+Bank17Start				ds.l	1			; 0b8 ; Starting address of RAM bank 17
+Bank17Size				ds.l	1			; 0bc ; Number of bytes in  RAM bank 17
+Bank18Start				ds.l	1			; 0c0 ; Starting address of RAM bank 18
+Bank18Size				ds.l	1			; 0c4 ; Number of bytes in  RAM bank 18
+Bank19Start				ds.l	1			; 0c8 ; Starting address of RAM bank 19
+Bank19Size				ds.l	1			; 0cc ; Number of bytes in  RAM bank 19
+Bank20Start				ds.l	1			; 0d0 ; Starting address of RAM bank 20
+Bank20Size				ds.l	1			; 0d4 ; Number of bytes in  RAM bank 20
+Bank21Start				ds.l	1			; 0d8 ; Starting address of RAM bank 21
+Bank21Size				ds.l	1			; 0dc ; Number of bytes in  RAM bank 21
+Bank22Start				ds.l	1			; 0e0 ; Starting address of RAM bank 22
+Bank22Size				ds.l	1			; 0e4 ; Number of bytes in  RAM bank 22
+Bank23Start				ds.l	1			; 0e8 ; Starting address of RAM bank 23
+Bank23Size				ds.l	1			; 0ec ; Number of bytes in  RAM bank 23
+Bank24Start				ds.l	1			; 0f0 ; Starting address of RAM bank 24
+Bank24Size				ds.l	1			; 0f4 ; Number of bytes in  RAM bank 24
+Bank25Start				ds.l	1			; 0f8 ; Starting address of RAM bank 25
+Bank25Size				ds.l	1			; 0fc ; Number of bytes in  RAM bank 25
 EndOfBanks
 						align	5			; pad to nice cache block alignment
-MaxBanks				equ		16			; 16 banks, 0...15
+MaxBanks				equ		26			; 16 banks, 0...15
 Size					equ		*
 						endr
 
