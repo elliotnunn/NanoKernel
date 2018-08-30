@@ -23,6 +23,33 @@
 kExternalIntAlign equ 6
 
 ########################################################################
+; Params:
+;    r3 - ptr to NKConfigurationInfo
+;
+; Returns:
+;    r7 - ptr to external interrupt handler for the board we're running on
+;
+; Spoils:
+;    r12
+
+GetExtIntHandler
+    mflr    r12         ; save LR
+    bl      @tableend
+@table
+    dc.w    ExternalInt0 - @table           ; 0
+    dc.w    ExtIntHandlerPDM - @table       ; 1
+    dc.w    ExtIntHandlerTNT - @table       ; 2
+    align   2
+@tableend
+    mflr    r7              ; r7 points to @table now
+    mtlr    r12             ; restore LR
+    lbz     r12, NKConfigurationInfo.InterruptHandlerKind(r3)
+    slwi    r12, r12, 1     ; calculate address of the external int handler
+    lhzx    r12, r7, r12    ; for InterruptHandlerKind from the offsets
+    add     r7, r7, r12     ; in @table and return it in r7
+    blr
+
+########################################################################
 
     _align kExternalIntAlign
 ExternalInt0
