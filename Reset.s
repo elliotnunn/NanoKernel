@@ -73,6 +73,10 @@ rAlt set r8
     stw     r23, VecTbl.SysCall(rSys)
     stw     r23, VecTbl.SysCall(rAlt)
 
+    _kaddr  r23, rNK, PerfMonitorInt
+    stw     r23, VecTbl.PerfMonitor(rSys)
+    stw     r23, VecTbl.PerfMonitor(rAlt)
+
     _kaddr  r23, rNK, TraceInt
     stw     r23, VecTbl.Trace(rSys)
     stw     r23, VecTbl.Trace(rAlt)
