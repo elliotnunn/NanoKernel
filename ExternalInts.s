@@ -237,10 +237,15 @@ ExtIntHandlerPBX
     mtmsr   r0
     isync
 
-    li      r0, 0xC0
+    lwz     r0, -0x6000(r2)
+    ori     r0, r0, 0x80
     stw     r0, -0x6000(r2)
     eieio
-    lwz     r2, -0x6000(r2)
+    lwz     r0, -0x6000(r2)
+    insrwi  r0, r0, 3, 26
+    stw     r0, -0x6000(r2)
+    eieio
+    mr      r2, r0
     mtmsr   r3
     isync
 
@@ -256,6 +261,7 @@ ExtIntHandlerPBX
     mfcr    r0
     lwz     r3, KDP.EmuIntLevelPtr(r1)
     clrlwi. r2, r2, 29
+    ori     r2, r2, 0x8000
     sth     r2, 0(r3)
     mfsprg  r2, 2
     lwz     r3, KDP.r3(r1)

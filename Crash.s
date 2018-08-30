@@ -138,7 +138,7 @@ Crash
     stw     r0, KDP.CrashCaller(r1)
 
 ; Now spin
-    lis     r2, 2           ; Count down from 64k to find a zero
+    lis     r2, 32          ; Count down from 64k to find a zero
 @nonzero
     lwzu    r0, -4(r2)
     mr.     r2, r2
