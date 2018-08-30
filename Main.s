@@ -28,3 +28,4 @@ MRBase
     include 'Emulate.s'
     include 'SoftInts.s'
     include 'VirtualMem.s'
+    include 'Power.s'
