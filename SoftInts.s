@@ -310,10 +310,52 @@ ProgramInt
 ########################################################################
 
     _align kSoftIntAlign
-SysCallInt
-    bl      LoadInterruptRegisters
-    mfmsr   r8
+SysCallInt ; Now stolen from IntProgram
+    ;   Standard interrupt palaver
+    mfsprg  r1, 0
+    stw     r6, KDP.r6(r1)
+    mfsprg  r6, 1
+    stw     r6, KDP.r1(r1)
+    lwz     r6, KDP.ContextPtr(r1)
+    stw     r7, CB.r7+4(r6)
+    stw     r8, CB.r8+4(r6)
+    stw     r9, CB.r9+4(r6)
+    stw     r10, CB.r10+4(r6)
+    stw     r11, CB.r11+4(r6)
+    stw     r12, CB.r12+4(r6)
+    stw     r13, CB.r13+4(r6)
+
+    ;   Compare SRR0 with address of Emulator's KCall trap table
+    lwz     r8, KDP.EmuTrapTableLogical(r1)
+    mfsrr0  r10
+    mfcr    r13
     subi    r10, r10, 4
+    xor.    r8, r10, r8
+    lwz     r7, KDP.Flags(r1)
+    mfsprg  r12, 2
+    beq     KCallReturnFromExceptionFastPath    ; KCall in Emulator table => fast path
+    rlwimi. r7, r7, bGlobalFlagSystem, 0, 0
+    cmplwi  cr7, r8, 16 * 4
+    bge     cr0, @fromAltContext                ; Alt Context cannot make KCalls; this might be an External Int
+    bge     cr7, @notFromEmulatorTrapTable      ; from Emulator but not from its KCall table => do more checks
+
+    ;   SUCCESSFUL TRAP from emulator KCall table
+    ;   => Service call then return to link register
+    add     r8, r8, r1
+    lwz     r11, KDP.NKInfo.NanoKernelCallCounts(r8)
+    lwz     r10, KDP.KCallTbl(r8)
+    addi    r11, r11, 1
+    stw     r11, KDP.NKInfo.NanoKernelCallCounts(r8)
+    mtlr    r10
+    mr      r10, r12 ; ret addr: LR was saved to SPRG2, SPRG2 to r12 above, r12 to r10 now, r10 to SRR0 to program ctr later
+    mfsrr1  r11
+    rlwimi  r7, r7, 32-5, 26, 26 ; something about MSR[SE]
+    blr
+
+@fromAltContext ; Raise Exception
+@notFromEmulatorTrapTable
+    mfsrr1  r11
+    mfmsr   r8
     rlwimi  r11, r8, 0, 0xFFFF0000
     li      r8, ecSystemCall
     b       Exception
