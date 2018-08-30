@@ -5,6 +5,15 @@ kSoftIntAlign equ 5
 ########################################################################
 
     _align kSoftIntAlign
+PerfMonitorInt
+    mfsprg  r1, 2       ; Both r1 and LR are clobbered on entry,
+    mtlr    r1          ; so might as well use r1 for scratch as
+    mfsprg  r1, 1       ; we restore from SPRG1/2.
+    rfi
+
+########################################################################
+
+    _align kSoftIntAlign
 KCallRunAlternateContext ; CB r3, flags r4
 ; For the native CB pointers, maintain a 4-entry log-phys cache in KDP
     and.    r8, r4, r13
