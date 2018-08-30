@@ -277,6 +277,7 @@ ProgramInt
     mtcrf   0x70, r11
 @notTrap                            ; then it was some other software exception
     bc      BO_IF, 12, Emulate
+    bc      BO_IF+1, 13, Emulate
     bc      BO_IF, 11, @floatingPointException
 @illegalTrap                        ; because we only allow traps 0-15
     rlwinm  r8, r11, 17, 28, 29 

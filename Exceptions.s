@@ -319,6 +319,7 @@ SwitchContext ; old_cb r6, new_cb r9
     xoris   r7, r7, GlobalFlagSystem >> 16          ; flip Emulator flag
     rlwimi  r11, r8, 0, maskMsrFlags
     mr      r6, r9                                  ; change the magic ContextBlock register
+    _mvbit  r11, bContextFlagEmulateAll, r7, bGlobalFlagSystem
     rlwimi  r7, r8, 0, maskContextFlags             ; change bottom half of flags only
 
     andi.   r8, r11, MsrFE0 + MsrFE1                ; FP exceptions enabled in new context?
