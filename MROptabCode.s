@@ -376,22 +376,6 @@ MRSecLSWix
 
 ########################################################################
 
-MRPriLSCBX
-    mfxer   r22
-    andi.   r22, r22, 0x7F
-    rlwimi  r17, r27, 0,16,20
-    insrwi  r17, r27, 1,3
-    addi    r22, r22, -1
-    beq     MRSecDone
-    andis.  r23, r17, 0x1F
-    rlwimi  r17, r22, 4,21,25
-    not     r22, r22
-    insrwi  r17, r22, 2,4
-    mr      r19, r18
-    bne     loc_10C8
-    rlwimi  r17, r17, 5,11,15
-    b       loc_10C8
-
 MRSecLSCBX
     rlwinm. r22, r17, 28,25,29
     rlwinm  r28, r17, 13,25,29
@@ -399,6 +383,23 @@ MRSecLSCBX
     rlwinm  r23, r17, 9,27,28
     slw     r21, r21, r23
     b       loc_109C
+
+MRPriLSCBX
+    mfxer   r22
+    andi.   r22, r22, 0x7F
+    rlwimi  r17, r27, 0,16,20
+    insrwi  r17, r27, 1,3
+    cmpw    cr7, r27, r22
+    beq     loc_112C
+    addi    r22, r22, -1
+    andis.  r23, r17, 0x1F
+    rlwimi  r17, r22, 4,21,25
+    not     r22, r22
+    insrwi  r17, r22, 2,4
+    mr      r19, r18
+    bne     loc_1070
+    rlwimi  r17, r17, 5,11,15
+    b       loc_1070
 
 ########################################################################
 
@@ -460,7 +461,6 @@ loc_10B8
     addis   r28, r17, 0x20
     rlwimi  r17, r28, 0,6,10
     addi    r17, r17, -0x40
-    beq     MRSecDone
 
 loc_10C8
     not     r22, r22
