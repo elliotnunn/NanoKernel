@@ -46,17 +46,7 @@ rAlt set r8
     stw     r23, VecTbl.InstStorage(rSys)
     stw     r23, VecTbl.InstStorage(rAlt)
 
-    lbz     r22, NKConfigurationInfo.InterruptHandlerKind(rCI)
-    cmpwi   r22, 0
-    _kaddr  r23, rNK, ExternalInt0
-    beq     @chosenIntHandler
-    cmpwi   r22, 1
-    _kaddr  r23, rNK, ExtIntHandlerPDM
-    beq     @chosenIntHandler
-    cmpwi   r22, 2
-    _kaddr  r23, rNK, ExtIntHandlerTNT
-    beq     @chosenIntHandler
-@chosenIntHandler
+    lwz     r23, KDP.IntHandlerPtr(r1)
     stw     r23, VecTbl.External(rSys)
 
     _kaddr  r23, rNK, ProgramInt

@@ -9,6 +9,10 @@ rED set r8 ; Emulator Data Page
 
 ########################################################################
 
+    bl      GetExtIntHandler ; returned in r7
+
+########################################################################
+
     li      r0, 0       ; Zero lots of fields
 
 ########################################################################
@@ -140,6 +144,8 @@ InitInfoRecords
 
 InitKernelData
     stw     rCI, KDP.ConfigInfoPtr(r1)
+
+    stw     r7, KDP.IntHandlerPtr(r1)
 
     addi    r12, r14, 1
     stw     r12, KDP.SysInfo.HashTableSize(r1)
