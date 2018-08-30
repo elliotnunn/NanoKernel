@@ -115,8 +115,26 @@ ResetKCallTable
     _kaddr  r23, rNK, KCallPrioritizeInterrupts
     stw     r23, KCallTbl.PrioritizeInterrupts(r8)
 
+    _kaddr  r23, rNK, KCallPowerDispatch
+    stw     r23, KCallTbl.PowerDispatch(r8)
+
     _kaddr  r23, rNK, KCallSystemCrash
     stw     r23, KCallTbl.SystemCrash(r8)
+
+########################################################################
+
+ResetPowerInfo
+    mfpvr   r23
+    srwi    r23, r23, 16
+    cmplwi  r23, 0x000f
+    ble     @knownpvr
+    li      r23, 0x0000
+@knownpvr
+    add     r8, rNK, r23 ; backport this change!!!
+    lbz     r23, HID0SelectTable-CodeBase(r8)
+    stb     r23, KDP.PowerHID0Select(r1)
+    lbz     r23, HID0EnableTable-CodeBase(r8)
+    stb     r23, KDP.PowerHID0Enable(r1)
 
 ########################################################################
 

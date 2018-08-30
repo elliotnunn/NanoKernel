@@ -413,6 +413,8 @@ VMLogicalPages          ds.l    1   ; 6a8 ; size of VM Manager's address space
 VMPhysicalPages         ds.l    1   ; 6ac ; how many pages VM Manager may use
 VMPageArray             ds.l    1   ; 6b0 ; array of 68k Page Descriptors
 VMMaxVirtualPages       ds.l    1   ; 6b4 ; largest VM area that the PageMap allows
+PowerHID0Select         ds.b    1   ; 6b8 ; 2x HID0 bit indices: 01=DOZE, 10=NAP, 11=SLEEP
+PowerHID0Enable         ds.b    1   ; 6b9 ; 0=disable, 1=HID0[NHR], 2=HID0[NHR+DOZE/NAP/SLEEP]
 
     ORG 0x6c0
 PhysicalPageArray       ds.l    16  ; 6c0:700 ; actually one ptr per segment
