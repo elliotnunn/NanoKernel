@@ -54,6 +54,7 @@ GetExtIntHandler
     _align kExternalIntAlign
 ExternalInt0
     mfsprg  r1, 0                           ; Init regs and increment ctr
+    dcbz    0, r1
     stw     r0, KDP.r0(r1)
     stw     r2, KDP.r2(r1)
     lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
@@ -69,8 +70,10 @@ ExternalInt0
     mfsrr0  r4
     mfsrr1  r5
     mtmsr   r0
+    isync
     stw     r3, 0(r3)
     mtmsr   r2
+    isync
     mtsrr0  r4
     mtsrr1  r5
     lwz     r4, KDP.r4(r1)
@@ -143,6 +146,7 @@ AMICIrq2IPL ; LUT for AMIC IRQ -> 68k IPL mapping
     _align kExternalIntAlign
 ExtIntHandlerPDM
     mfsprg  r1, 0               ; r1 points to kernel globals
+    dcbz    0, r1
     stw     r0, KDP.r0(r1)      ; save r0
     stw     r2, KDP.r2(r1)      ; save r2
     lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
@@ -158,11 +162,13 @@ ExtIntHandlerPDM
     mfsrr0  r4                  ; save SRR0
     mfsrr1  r5                  ; save SRR1
     mtmsr   r0                  ; enable data address translation
+    isync
     li      r0, 0xC0            ; clear AMIC CPU interrupt by setting bits 6-7
     stb     r0, -0x6000(r2)
     eieio
     lbz     r0, -0x6000(r2)     ; read AMIC Irq flags
     mtmsr   r3                  ; disable data address translation
+    isync
     mtsrr0  r4                  ; restore SRR0
     mtsrr1  r5                  ; restore SRR1
     lwz     r4, KDP.r4(r1)      ; restore r4
@@ -205,6 +211,7 @@ ExtIntHandlerPDM
     _align kExternalIntAlign
 ExtIntHandlerTNT
     mfsprg  r1, 0                           ; Init regs and increment ctr
+    dcbz    0, r1
     stw     r0, KDP.r0(r1)
     stw     r2, KDP.r2(r1)
     lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
@@ -220,11 +227,13 @@ ExtIntHandlerTNT
     mfsrr0  r4
     mfsrr1  r5
     mtmsr   r3                  ; enable data address translation
+    isync
     lis     r3, 0x8000
     stw     r3, 0x28(r2)        ; write ifMode1Clear flag to interrupt clear register
     eieio
     lwz     r3, 0x2C(r2)        ; read interrupt levels register
     mtmsr   r0                  ; disable data address translation
+    isync
     mtsrr0  r4
     mtsrr1  r5
     lwz     r4, KDP.r4(r1)

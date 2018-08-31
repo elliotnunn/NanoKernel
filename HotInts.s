@@ -77,8 +77,10 @@ DataStorageInt ; to MemRetry! (see MROptab.s for register info)
     mfmsr   r14
     _ori    r15, r14, MsrDR
     mtmsr   r15
+    isync
     lwz     r27, 0(r10)                 ; r27 = instruction
     mtmsr   r14
+    isync
 
 EmulateViaMemRetry
     rlwinm. r18, r27, 18, 25, 29        ; r16 = 4 * rA (r0 wired to 0)
@@ -174,6 +176,8 @@ AlignmentInt ; to MemRetry! (see MROptab.s for register info)
     rlwimi  r17, r26, 6, 26, 5
     bclr    BO_IF_NOT, mrSkipInstLoad
     mtmsr   r15
+    isync
     lwz     r27, 0(r10)
     mtmsr   r14
+    isync
     blr

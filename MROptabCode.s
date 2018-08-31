@@ -31,6 +31,7 @@ MRDoTableSTFD
     mtlr    r19
     rlwimi  r14, r11, 0,18,18
     mtmsr   r14
+    isync
     blr
 
 MRDoneTableSTFD
@@ -97,6 +98,7 @@ MRPriDone
     mtlr    r22
     mtsprg  3, r23
     mtmsr   r15
+    isync
     insrwi  r25, r26, 8,22
     bnelr
     b       MRDoSecondary
@@ -223,6 +225,7 @@ MRSecLFDu
     stw     r21, KDP.FloatScratch+4(r1)
     rlwimi  r14, r11, 0,18,18
     mtmsr   r14
+    isync
     ori     r11, r11, 0x2000
     blr
 
@@ -260,11 +263,15 @@ MRSecSTMW
 ########################################################################
 
 MRPriDCBZ                      ; Zero four 8b chunks of the cache blk
-    clrrwi  r19, r18, 5         ; r19 = address of chunk to zero
+    lhz     r21, KDP.ProcInfo.DataCacheBlockSize(r1) ; r19 = address of chunk to zero
+    neg     r21, r21
+    and     r19, r18, r21
     b       MRComDCBZ           ; (for use by this code only)
 
 MRSecDCBZ
-    andi.   r22, r19, 0x18
+    lhz     r21, KDP.ProcInfo.DataCacheBlockSize(r1)
+    subi    r21, r21, 8
+    and.    r22, r19, r21
     clrrwi  r19, r19, 3         ; MemAccess code decrements this reg
     beq     MRSecDone           ; Zeroed all foun chunks -> done!
 

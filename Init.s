@@ -35,8 +35,30 @@ ClearSPRs
     mtsr    14, r0
     mtsr    15, r0
 
+    mfpvr   r12
+    srwi    r12, r12, 16
+    cmpwi   r12, 1
+    bne     @non601
+;601
     mtspr   rtcl, r0
     mtspr   rtcu, r0
+    mtspr   ibat0l, r0
+    mtspr   ibat1l, r0
+    mtspr   ibat2l, r0
+    mtspr   ibat3l, r0
+    b       @endif
+@non601
+    mtspr   tbl, r0
+    mtspr   tbu, r0
+    mtspr   ibat0u, r0
+    mtspr   ibat1u, r0
+    mtspr   ibat2u, r0
+    mtspr   ibat3u, r0
+    mtspr   dbat0u, r0
+    mtspr   dbat1u, r0
+    mtspr   dbat2u, r0
+    mtspr   dbat3u, r0
+@endif
 
 ########################################################################
 
@@ -264,10 +286,6 @@ InitInfoRecordPointers
 
 ########################################################################
 
-    include 'ProcessorInfo.s'
-
-########################################################################
-
 InitEmulator
 ; Copy 16b boot version string ("Boot PDM 601 1.0")
     lwz     r11, NKConfigurationInfo.BootVersionOffset(rCI)
@@ -318,14 +336,24 @@ InitEmulator
     b       @setloop
 @donelm
 
-; Calculate NanoKernel "flags"
-    mfpvr   r7
-    srwi    r7, r7, 16
-    cmpwi   r7, 1
-    lis     r7, GlobalFlagSystem >> 16                      ; set System Context (Emulator) flag
-    bne     @not_601
-    _ori    r7, r7, GlobalFlagMQReg                         ; enable multiply-quotient reg on 601 only
-@not_601
+########################################################################
+
+    include 'ProcessorInfo.s'
+
+########################################################################
+
+; Calculate NanoKernel "flags" -- empirically, by attemping to wang MQ
+    lwz     r8, KDP.CodeBase(r1)
+    _kaddr  r8, r8, IgnoreSoftInt
+    stw     r8, KDP.VecTblSystem.Program(r1)
+    addi    r8, r1, KDP.VecTblSystem
+    mtsprg  3, r8
+
+    lis     r8, GlobalFlagMQReg >> 16
+    mtspr   mq, r8
+    li      r8, 0
+    mfspr   r8, mq
+    _ori    r7, r8, GlobalFlagSystem
     stw     r7, KDP.Flags(r1)
 
 ; Start user-mode execution at ReturnFromException trap

@@ -249,8 +249,10 @@ ProgramInt
     mfmsr   r9                      ; fetch the instruction to get the "trap number"
     _ori    r8, r9, MsrDR
     mtmsr   r8
+    isync
     lwz     r8, 0(r10)
     mtmsr   r9
+    isync
     xoris   r8, r8, 0xfff
     cmplwi  cr7, r8, 16             ; only traps 0-15 are allowed
     slwi    r8, r8, 2               ; (for "success" case below)
@@ -312,3 +314,15 @@ TraceInt ; here because of MSR[SE/BE], possibly thanks to ContextFlagTraceWhenDo
     bl      LoadInterruptRegisters
     li      r8, ecInstTrace
     b       Exception
+
+########################################################################
+
+    _align kSoftIntAlign
+IgnoreSoftInt ; Used to probe CPU features at init time
+    mfsrr0  r1
+    addi    r1, r1, 4
+    mtsrr0  r1
+    mfsprg  r1, 2
+    mtlr    r1
+    mfsprg  r1, 1
+    rfi
