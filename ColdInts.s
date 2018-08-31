@@ -18,9 +18,11 @@ InstStorageInt
     mtsprg  3, r23
     mr      r19, r10
     mtmsr   r15
+    isync
     lbz     r23, 0(r19)
     sync
     mtmsr   r14
+    isync
     mtsprg  3, r24
     lmw     r14, KDP.r14(r1)
     b       ReturnFromInt

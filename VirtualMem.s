@@ -622,14 +622,19 @@ VMMakePageNonCacheable ; page a0/r4
 
 vmFlushPageAndReturn ; When making page write-though or noncacheable
     rlwinm  r4, r9, 0, 0xFFFFF000
-    addi    r5, r4, 32
+    lhz     r8, KDP.ProcInfo.DataCacheBlockSize(r1)
+    add     r5, r4, r8
     li      r7, 0x1000
-    li      r8, 64
+    slwi    r8, r8, 1
 @loop
     subf.   r7, r8, r7
     dcbf    r7, r4
     dcbf    r7, r5
+    icbi    r7, r4
+    icbi    r7, r5
     bne     @loop
+    sync
+    isync
     b       vmRet
 
 ########################################################################

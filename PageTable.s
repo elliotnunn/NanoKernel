@@ -294,6 +294,7 @@ SetSpace ; Space r29
 ; values. Our job here is just to set the Segment Registers and BAT
 ; registers.
 
+    sync
     lwz     r28, AddrSpace.SegMapPtr(r29)
     stw     r28, KDP.CurSpace.SegMapPtr(r1)
     addi    r28, r28, 16*8 + 4
@@ -313,70 +314,85 @@ SetSpace ; Space r29
     stw     r28, KDP.CurSpace.BatMap(r1)
     beq     @601
 
+    li      r30, 0                      ; bad BATs are *never* legal,
+    mtspr   ibat0u, r30                 ; so zero before setting
+    mtspr   ibat1u, r30
+    mtspr   ibat2u, r30
+    mtspr   ibat3u, r30
+    mtspr   dbat0u, r30
+    mtspr   dbat1u, r30
+    mtspr   dbat2u, r30
+    mtspr   dbat3u, r30
+
     rlwimi  r29, r28, 7, 0x00000078     ; BATS, non-601
-    lwz     r30, KDP.BatRanges + 0(r29)
     lwz     r31, KDP.BatRanges + 4(r29)
-    mtspr   ibat0u, r30
+    lwz     r30, KDP.BatRanges + 0(r29)
+    rlwinm  r31, r31, 0, ~0x00000008
     mtspr   ibat0l, r31
-    stw     r30, KDP.CurIBAT0.U(r1)
+    mtspr   ibat0u, r30
     stw     r31, KDP.CurIBAT0.L(r1)
+    stw     r30, KDP.CurIBAT0.U(r1)
 
     rlwimi  r29, r28, 11, 0x00000078
-    lwz     r30, KDP.BatRanges + 0(r29)
     lwz     r31, KDP.BatRanges + 4(r29)
-    mtspr   ibat1u, r30
+    lwz     r30, KDP.BatRanges + 0(r29)
+    rlwinm  r31, r31, 0, ~0x00000008
     mtspr   ibat1l, r31
-    stw     r30, KDP.CurIBAT1.U(r1)
+    mtspr   ibat1u, r30
     stw     r31, KDP.CurIBAT1.L(r1)
+    stw     r30, KDP.CurIBAT1.U(r1)
 
     rlwimi  r29, r28, 15, 0x00000078
-    lwz     r30, KDP.BatRanges + 0(r29)
     lwz     r31, KDP.BatRanges + 4(r29)
-    mtspr   ibat2u, r30
+    lwz     r30, KDP.BatRanges + 0(r29)
+    rlwinm  r31, r31, 0, ~0x00000008
     mtspr   ibat2l, r31
-    stw     r30, KDP.CurIBAT2.U(r1)
+    mtspr   ibat2u, r30
     stw     r31, KDP.CurIBAT2.L(r1)
+    stw     r30, KDP.CurIBAT2.U(r1)
 
     rlwimi  r29, r28, 19, 0x00000078
-    lwz     r30, KDP.BatRanges + 0(r29)
     lwz     r31, KDP.BatRanges + 4(r29)
-    mtspr   ibat3u, r30
+    lwz     r30, KDP.BatRanges + 0(r29)
+    rlwinm  r31, r31, 0, ~0x00000008
     mtspr   ibat3l, r31
-    stw     r30, KDP.CurIBAT3.U(r1)
+    mtspr   ibat3u, r30
     stw     r31, KDP.CurIBAT3.L(r1)
+    stw     r30, KDP.CurIBAT3.U(r1)
 
     rlwimi  r29, r28, 23, 0x00000078
-    lwz     r30, KDP.BatRanges + 0(r29)
     lwz     r31, KDP.BatRanges + 4(r29)
-    mtspr   dbat0u, r30
+    lwz     r30, KDP.BatRanges + 0(r29)
     mtspr   dbat0l, r31
-    stw     r30, KDP.CurDBAT0.U(r1)
+    mtspr   dbat0u, r30
     stw     r31, KDP.CurDBAT0.L(r1)
+    stw     r30, KDP.CurDBAT0.U(r1)
 
     rlwimi  r29, r28, 27, 0x00000078
-    lwz     r30, KDP.BatRanges + 0(r29)
     lwz     r31, KDP.BatRanges + 4(r29)
-    mtspr   dbat1u, r30
+    lwz     r30, KDP.BatRanges + 0(r29)
     mtspr   dbat1l, r31
-    stw     r30, KDP.CurDBAT1.U(r1)
+    mtspr   dbat1u, r30
     stw     r31, KDP.CurDBAT1.L(r1)
+    stw     r30, KDP.CurDBAT1.U(r1)
 
     rlwimi  r29, r28, 31, 0x00000078
-    lwz     r30, KDP.BatRanges + 0(r29)
     lwz     r31, KDP.BatRanges + 4(r29)
-    mtspr   dbat2u, r30
+    lwz     r30, KDP.BatRanges + 0(r29)
     mtspr   dbat2l, r31
-    stw     r30, KDP.CurDBAT2.U(r1)
+    mtspr   dbat2u, r30
     stw     r31, KDP.CurDBAT2.L(r1)
+    stw     r30, KDP.CurDBAT2.U(r1)
 
     rlwimi  r29, r28, 3, 0x00000078
-    lwz     r30, KDP.BatRanges + 0(r29)
     lwz     r31, KDP.BatRanges + 4(r29)
-    mtspr   dbat3u, r30
+    lwz     r30, KDP.BatRanges + 0(r29)
     mtspr   dbat3l, r31
-    stw     r30, KDP.CurDBAT3.U(r1)
+    mtspr   dbat3u, r30
     stw     r31, KDP.CurDBAT3.L(r1)
+    stw     r30, KDP.CurDBAT3.U(r1)
 
+    isync
     cmpw    r29, r29                    ; return EQ for PutPTE
     blr
 

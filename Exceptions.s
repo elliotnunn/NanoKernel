@@ -460,6 +460,7 @@ ReturnFromInt
     mfmsr   r14
     _ori    r15, r14, MsrDR
     mtmsr   r15
+    isync
     rlwimi  r25, r26, 2, 22, 29         ; Second byte of MRRestab is a secondary routine
     bnelr
     b       MRDoSecondary

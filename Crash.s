@@ -11,8 +11,12 @@ Crash
     mfcr    r0
     stw     r0, KDP.CrashCR(r1)
 
+    mfpvr   r0
+    andis.  r0, r0, 0xFFFE
+    bne     @not601_mq
     mfspr   r0, mq
     stw     r0, KDP.CrashMQ(r1)
+@not601_mq
 
     mfxer   r0
     stw     r0, KDP.CrashXER(r1)
@@ -31,10 +35,14 @@ Crash
     mfspr   r0, dar
     stw     r0, KDP.CrashDAR(r1)
 
+    mfpvr   r0
+    andis.  r0, r0, 0xFFFE
+    bne     @not601_rtc
     mfspr   r0, rtcu
     stw     r0, KDP.CrashRTCU(r1)
     mfspr   r0, rtcl
     stw     r0, KDP.CrashRTCL(r1)
+@not601_rtc
 
     mfspr   r0, dec
     stw     r0, KDP.CrashDEC(r1)
@@ -88,6 +96,7 @@ Crash
     mfmsr   r0
     _ori    r0, r0, MsrFP
     mtmsr   r0
+    isync
     stfd    f0, KDP.CrashF0(r1)
     stfd    f1, KDP.CrashF1(r1)
     stfd    f2, KDP.CrashF2(r1)
@@ -135,12 +144,16 @@ Crash
     mr.     r2, r2
     bne     @nonzero
 
+    mfpvr   r0
+    andis.  r0, r0, 0xFFFE
+    bne     @not601_rtc2
 @retryrtc                   ; Save RTC in "Mac/Smurf shared message mem"
     mfspr   r2, rtcu
     mfspr   r3, rtcl
     mfspr   r0, rtcu
     xor.    r0, r0, r2
     bne     @retryrtc
+@not601_rtc2
     lwz     r1, KDP.SharedMemoryAddr(r1)
     stw     r2, 0(r1)
     ori     r3, r3, 1

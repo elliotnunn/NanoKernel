@@ -16,6 +16,7 @@ FPUnavailInt
     _ori    r11, r11, MsrFP
     lwz     r6, KDP.ContextPtr(r1)
     mtmsr   r11
+    isync
 
     bl      LoadFloats
 
@@ -41,6 +42,7 @@ QuickThawFPU
     _ori    r8, r8, MsrFP
     beqlr
     mtmsr   r8
+    isync
 
     _ori    r11, r11, MsrFP
 
@@ -88,6 +90,7 @@ FreezeFPU
     mfmsr   r8
     _ori    r8, r8, MsrFP
     mtmsr   r8
+    isync
 
     rlwinm  r11, r11, 0, ~MsrFP
 
