@@ -234,6 +234,9 @@ InitKernelData
     add     r13, r13, r12
     stw     r13, KDP.PageMapFreePtr(r1)
 
+    stw     r0, 0x910(r1)   ; Zero first word of old PageMap in
+                            ; case old code attempts access
+
 ########################################################################
 
 InitInfoRecordPointers

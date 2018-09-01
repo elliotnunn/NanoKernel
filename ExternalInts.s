@@ -329,27 +329,30 @@ ExtIntHandlerAlchemy
     lwz     r6, KDP.r6(r1)
 
     mfcr    r0
-                                ; Interpret GrandCentral IRQ bits:
-    rlwinm. r2, r3, 0, 11, 11   ; ExtNMI IRQ asserted?
-    li      r2, 7               ; IPL -> 7
+                                            ; Interpret OpenPic result:
+    andis.  r2, r3, 0x0010                  ; bit 11 -> 7
+    li      r2, 7
     bne     @gotnum
 
-    rlwinm  r2, r3, 0, 15, 16   ; SCC A/B
-    rlwimi. r2, r3, 0, 21, 31   ; or any DMA IRQ asserted?
-    li      r2, 4               ; IPL -> 4
+    andi.   r2, r3, 0x83FF                  ; bit 15-16/22-31 -> 4
+    li      r2, 4
+    bne     @gotnum
+    andis.  r2, r3, 1
+    li      r2, 4
     bne     @gotnum
 
-    rlwinm. r2, r3, 0, 17, 17   ; MACE IRQ asserted?
-    li      r2, 3               ; IPL -> 3
+    andis.  r2, r3, 0x1FCA                  ; bit 3-9/12/14/17-20 -> 2
+    li      r2, 2
+    bne     @gotnum
+    andi.   r2, r3, 0x7800
+    li      r2, 2
     bne     @gotnum
 
-    andis.  r2, r3, 0x7FEA      ; any other IRQ except VIA1 asserted?
-    rlwimi. r2, r3, 0, 18, 19
-    li      r2, 2               ; IPL -> 2
+    andis.  r2, r3, 0x0004                  ; bit 13 -> 1
+    li      r2, 1
     bne     @gotnum
 
-    extrwi. r2, r3, 1, 13       ; bit 13 -> IPL 1 (VIA1)
-                                ; else -> IPL 0
+    xor     r2, r0, r0                      ; else -> 0
 
 @gotnum
     lwz     r3, KDP.EmuIntLevelPtr(r1)
