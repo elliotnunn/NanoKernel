@@ -444,6 +444,7 @@ ExtIntHandlerTNT
 
 @gotnum
     lwz     r3, KDP.EmuIntLevelPtr(r1)
+    ori     r2, r2, 0x8000
     sth     r2, 0(r3)
     mfsprg  r2, 2
     lwz     r3, KDP.r3(r1)

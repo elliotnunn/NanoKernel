@@ -25,6 +25,18 @@ UpdateProcessorInfo
     addi    r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
     beq     ChosenProcessorInfo
 
+    cmpwi   r12, 7 ; 603e
+    addi    r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
+    beq     ChosenProcessorInfo
+
+    cmpwi   r12, 8 ; 603e
+    addi    r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
+    beq     ChosenProcessorInfo
+
+    cmpwi   r12, 9 ; 603e
+    addi    r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
+    beq     ChosenProcessorInfo
+
 ########################################################################
 
 ; Locate Page Table (HTAB): r21/r22 = start/size
@@ -643,6 +655,57 @@ ProcessorInfoTable
     dc.w    4           ; InstCacheAssociativity
     dc.w    4           ; DataCacheAssociativity
     dc.w    0x40        ; TransCacheTotalSize
+    dc.w    2           ; TransCacheAssociativity
+
+; 750FX
+    dc.l    0x1000      ; PageSize
+    dc.l    0x4000      ; DataCacheTotalSize
+    dc.l    0x4000      ; InstCacheTotalSize
+    dc.w    0x20        ; CoherencyBlockSize
+    dc.w    0x20        ; ReservationGranuleSize
+    dc.w    0           ; CombinedCaches
+    dc.w    0x20        ; InstCacheLineSize
+    dc.w    0x20        ; DataCacheLineSize
+    dc.w    0x20        ; DataCacheBlockSizeTouch
+    dc.w    0x20        ; InstCacheBlockSize
+    dc.w    0x20        ; DataCacheBlockSize
+    dc.w    4           ; InstCacheAssociativity
+    dc.w    4           ; DataCacheAssociativity
+    dc.w    0x40        ; TransCacheTotalSize
+    dc.w    2           ; TransCacheAssociativity
+
+; 750
+    dc.l    0x1000      ; PageSize
+    dc.l    0x8000      ; DataCacheTotalSize
+    dc.l    0x8000      ; InstCacheTotalSize
+    dc.w    0x20        ; CoherencyBlockSize
+    dc.w    0x20        ; ReservationGranuleSize
+    dc.w    0           ; CombinedCaches
+    dc.w    0x20        ; InstCacheLineSize
+    dc.w    0x20        ; DataCacheLineSize
+    dc.w    0x20        ; DataCacheBlockSizeTouch
+    dc.w    0x20        ; InstCacheBlockSize
+    dc.w    0x20        ; DataCacheBlockSize
+    dc.w    8           ; InstCacheAssociativity
+    dc.w    8           ; DataCacheAssociativity
+    dc.w    0x80        ; TransCacheTotalSize
+    dc.w    2           ; TransCacheAssociativity
+
+; ???
+    dc.l    0x1000      ; PageSize
+    dc.l    0x8000      ; DataCacheTotalSize
+    dc.l    0x8000      ; InstCacheTotalSize
+    dc.w    0x20        ; CoherencyBlockSize
+    dc.w    0x20        ; ReservationGranuleSize
+    dc.w    0           ; CombinedCaches
+    dc.w    0x20        ; InstCacheLineSize
+    dc.w    0x20        ; DataCacheLineSize
+    dc.w    0x20        ; DataCacheBlockSizeTouch
+    dc.w    0x20        ; InstCacheBlockSize
+    dc.w    0x20        ; DataCacheBlockSize
+    dc.w    4           ; InstCacheAssociativity
+    dc.w    4           ; DataCacheAssociativity
+    dc.w    0x80        ; TransCacheTotalSize
     dc.w    2           ; TransCacheAssociativity
 
 ChosenProcessorInfo
