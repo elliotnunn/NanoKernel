@@ -80,6 +80,11 @@ TrimFirstBank
     subf    r11, r12, r11
     stw     r11, NKSystemInfo.PhysicalMemorySize(rSI)
 
+    sync
+    isync
+    stwx    r11, 0, r11
+    eieio
+
 ########################################################################
 
 InitKernelMemory
@@ -109,6 +114,11 @@ InitKernelMemory
     blt     @nextbank
     cmplw   r13, r11
     bgt     @nextbank
+
+    sync
+    isync
+    stwx    r13, 0, r13
+    eieio
 
     add     r12, r13, r15                               ; SDR1 = HTABORG || HTABMASK (16b each)
     subf    r12, r14, r12                               ; Leave HTAB pointer in r12

@@ -42,6 +42,7 @@ GetExtIntHandler
     dc.w    ExtIntHandlerPBX - @table       ; 3
     dc.w    ExtIntHandlerCordyceps - @table ; 4
     dc.w    ExtIntHandlerAlchemy - @table   ; 5
+    dc.w    ExtIntHandlerPippin - @table    ; 6
     align   2
 @tableend
     mflr    r7              ; r7 points to @table now
@@ -328,10 +329,6 @@ ExtIntHandlerAlchemy
     lwz     r6, KDP.r6(r1)
 
     mfcr    r0
-                                ; Interpret GrandCentral IRQ bits:
-    rlwinm. r2, r3, 0, 11, 11   ; ExtNMI IRQ asserted?
-    li      r2, 7               ; IPL -> 7
-    bne     @gotnum
 
     rlwinm  r2, r3, 0, 15, 16   ; SCC A/B
     rlwimi. r2, r3, 0, 21, 31   ; or any DMA IRQ asserted?
@@ -342,7 +339,7 @@ ExtIntHandlerAlchemy
     li      r2, 3               ; IPL -> 3
     bne     @gotnum
 
-    andis.  r2, r3, 0x7FEA      ; any other IRQ except VIA1 asserted?
+    andis.  r2, r3, 0x7FFA      ; any other IRQ except VIA1 asserted?
     rlwimi. r2, r3, 0, 18, 19
     li      r2, 2               ; IPL -> 2
     bne     @gotnum
@@ -421,10 +418,6 @@ ExtIntHandlerTNT
 
     mfcr    r0                  ; reset CR
 
-    rlwinm. r2, r3, 0, 11, 11   ; set IPL to 7
-    li      r2, 7               ; if ExtNMI IRQ is asserted
-    bne     @gotnum             ;
-
     rlwinm  r2, r3, 0, 15, 16   ; SCC A and SCC B
     rlwimi. r2, r3, 0, 21, 31   ; together with all DMA IRQs
     li      r2, 4               ; will get the priority level 4
@@ -434,7 +427,7 @@ ExtIntHandlerTNT
     li      r2, 3               ; interrupt at level 3
     bne     @gotnum
 
-    andis.  r2, r3, 0x7FEA      ; all other devices including SCSI, PCI, Audio,
+    andis.  r2, r3, 0x7F0A      ; all other devices including SCSI, PCI, Audio,
     rlwimi. r2, r3, 0, 18, 19   ; Floppy etc. except VIA1
     li      r2, 2               ; will get the priority level 2
     bne     @gotnum
@@ -525,6 +518,92 @@ ExtIntHandlerCordyceps
     mfcr    r0
     lwz     r3, KDP.EmuIntLevelPtr(r1)
     clrlwi. r2, r2, 29
+    sth     r2, 0(r3)
+    mfsprg  r2, 2
+    lwz     r3, KDP.r3(r1)
+    mtlr    r2
+    beq     @clear                          ; 0 -> clear interrupt
+                                            ; nonzero -> post interrupt
+
+    lwz     r2, KDP.PostIntMask(r1)         ; Post an interrupt via Cond Reg
+    or      r0, r0, r2
+
+@return
+    mtcr    r0                              ; Set CR and return
+    lwz     r0, KDP.r0(r1)
+    lwz     r2, KDP.r2(r1)
+    mfsprg  r1, 1
+    rfi
+
+@clear
+    lwz     r2, KDP.ClearIntMask(r1)        ; Clear an interrupt via Cond Reg
+    and     r0, r0, r2
+    b       @return
+
+########################################################################
+; The Pippin board uses the same I/O Controller as the TNT board.
+; Please refer to ExtIntHandlerTNT for further explanation.
+
+    _align kExternalIntAlign
+ExtIntHandlerPippin
+    mfsprg  r1, 0                           ; Init regs and increment ctr
+    dcbz    0, r1
+    stw     r0, KDP.r0(r1)
+    stw     r2, KDP.r2(r1)
+    lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
+    stw     r3, KDP.r3(r1)
+    addi    r2, r2, 1
+    stw     r2, KDP.NKInfo.ExternalIntCount(r1)
+
+    lis     r2, 0xF300          ; r3 - base address of GrandCentral
+    mfmsr   r0
+    _ori    r3, r0, MsrDR
+    stw     r4, KDP.r4(r1)
+    stw     r5, KDP.r5(r1)
+    stw     r6, KDP.r6(r1)
+    mfsrr0  r4
+    mfsrr1  r5
+    mtmsr   r3
+    isync
+    lis     r3, 0x8000
+    li      r6, 0x28
+    stwbrx  r3, r6, 2
+    eieio
+    li      r6, 0x24
+    lwbrx   r3, r6, r2
+    li      r6, 0x2C
+    lwbrx   r6, r6, r2
+    and     r3, r6, r3
+    eieio
+    mtmsr   r0
+    isync
+    mtsrr0  r4
+    mtsrr1  r5
+    lwz     r4, KDP.r4(r1)
+    lwz     r5, KDP.r5(r1)
+    lwz     r6, KDP.r6(r1)
+
+    mfcr    r0
+
+    rlwinm  r2, r3, 0, 15, 16   ; SCC A/B
+    rlwimi. r2, r3, 0, 21, 31   ; or any DMA IRQ asserted?
+    li      r2, 4               ; IPL -> 4
+    bne     @gotnum
+
+    rlwinm. r2, r3, 0, 17, 17   ; MACE IRQ asserted?
+    li      r2, 3               ; IPL -> 3
+    bne     @gotnum
+
+    andis.  r2, r3, 0x7F0A      ; any other IRQ except VIA1 asserted?
+    rlwimi. r2, r3, 0, 18, 19
+    li      r2, 2               ; IPL -> 2
+    bne     @gotnum
+
+    extrwi. r2, r3, 1, 13       ; bit 13 -> IPL 1 (VIA1)
+                                ; else -> IPL 0
+
+@gotnum
+    lwz     r3, KDP.EmuIntLevelPtr(r1)
     sth     r2, 0(r3)
     mfsprg  r2, 2
     lwz     r3, KDP.r3(r1)
