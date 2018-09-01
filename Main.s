@@ -10,6 +10,7 @@ CrashPageTable
 CrashExceptions
 CrashSoftInts
 CrashVirtualMem
+CrashRTAS
     include 'Crash.s'
     include 'HotInts.s'
     _align 10
@@ -28,4 +29,5 @@ MRBase
     include 'SoftInts.s'
     include 'VirtualMem.s'
     include 'Power.s'
+    include 'RTAS.s'
     include 'ExternalInts.s'

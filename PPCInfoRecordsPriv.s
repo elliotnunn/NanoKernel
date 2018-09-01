@@ -350,20 +350,9 @@ NKHWInfoPtr				equ		$5FFFEFD0	; logical address of HWInfo record
 NKHWInfoVer				equ		$5FFFEFD4	; version number of HWInfo record
 NKHWInfoLen				equ		$5FFFEFD6	; length of HWInfo record
 
+kHWInfoVer				equ		$0100
+
 NKHWInfo				record	0,increment
-MacROM_Base				ds.l	1			; 000 ; base address (physical) of Mac ROM
-DeviceTreeBase			ds.l	1			; 004 ; base address of the copied device tree properties
-UniversalInfoTableBase	ds.l	1			; 008 ; base address of the Universal Info Table
-ConfigInfoTableBase		ds.l	1			; 00c ; base address of the Config Info Table
-VectorLookupTable		ds.l	1			; 010 ; base address of the interrupt vector lookup table (short *)
-VectorMaskTable			ds.l	1			; 014 ; base address of the interrupt vector mask table (long *)
-
-OpenPICBaseAddr			ds.l	1			; 018 ; OpenPIC base address
-
-ISAMaster8259			ds.l	1			; 01c ; ISA Master 8259 ports (char *)
-ISASlave8259			ds.l	1			; 020 ; ISA Slave 8259 ports (char *)
-InterruptAck8259		ds.l	1			; 024 ; address to read to ack 8259 interrupt (long *)
-
 											; interrupt pending bits (actively changing)
 
 PendingInts				ds.l	2			; 028 ; 64 bits of pending interrupts
@@ -426,6 +415,7 @@ HardwareInfoFlags		ds.l	1			; 094 ; 32 bits of flags (see enum above)
 RTAS_Get_PowerOn_Time	ds.l	1			; 098 ; token for RTAS getting time for system startup
 
 						align	5			; pad to nice cache block alignment
+ DS.B 96
 Size					equ		*
 						endr
 

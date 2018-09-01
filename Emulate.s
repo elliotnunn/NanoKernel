@@ -29,15 +29,18 @@ InitEmulation
     not     r19, r18
     mfspr   r19, sia
     xor     r19, r18, r19
-    or      r17, r17, r19
+    or.     r17, r17, r19
+    bne     @nommcr0
+    _ori    r23, r23, EmHasMMCR0
+@nommcr0
     mtspr   sda, r18        ; Sampled Data Reg
     not     r19, r18
     mfspr   r19, sda
     xor     r19, r18, r19
     or.     r17, r17, r19
-    bne     @nommcr0
-    _ori    r23, r23, EmHasMMCR0
-@nommcr0
+    bne     @nosda
+    _ori    r23, r23, EmHasSDA
+@nosda
 
 ; Test MMCR1 (perf monitor) and related registers
 mmcr1 equ 956
@@ -653,8 +656,10 @@ Em10011 ;              (21----30)
     beq     cr1, @mfpmc2
     _csprnm cr1, r19, sia
     beq     cr1, @mfsia
+    bc      BO_IF_NOT, bEmHasSDA, @nosda
     _csprnm cr1, r19, sda
     beq     cr1, @mfsda
+@nosda
     bc      BO_IF_NOT, bEmHasMMCR1, PrivIllegalInst
     _csprnm cr1, r19, mmcr1
     beq     cr1, @mfmmcr1
@@ -768,8 +773,10 @@ Em10011 ;              (21----30)
     beq     cr1, FDP_1A34
     _csprnm cr1, r19, 955
     beq     cr1, FDP_1A3C
+    bc      BO_IF_NOT, bEmHasSDA, @nowsda
     _csprnm cr1, r19, 959
     beq     cr1, FDP_1A5C
+@nowsda
     bc      BO_IF_NOT, bEmHasMMCR1, PrivIllegalInst
     _csprnm cr1, r19, 956
     beq     cr1, FDP_1A44

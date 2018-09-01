@@ -99,8 +99,9 @@ mrChangedRegInEWA   equ cr3_so ; have "loaded" a new reg value (i.e. saved into 
 
     _bitequate 14, EmAlways1
     _bitequate 15, EmAlways2
-    _bitequate 18, EmHasMMCR0
+    _bitequate 18, EmHasSDA
     _bitequate 19, EmHasMMCR1
+    _bitequate 20, EmHasMMCR0
 
 ########################################################################
 
@@ -519,9 +520,19 @@ CrashF30                ds.d    1   ; 8f0
 CrashF31                ds.d    1   ; 8f8
 CrashFPSCR              ds.l    1   ; 900
 CrashCaller             ds.l    1   ; 904
-                        ds.l    1   ; 908
-                        ds.l    1   ; 90c
 CrashBtm
+
+RTASDispatch            ds.l    1   ; 908
+RTASData                ds.l    1   ; 90c
+IntBlah1                ds.w    1   ; 910
+IntBlah2                ds.w    1   ; 912
+                        ds.l    1   ; 914
+                        ds.l    1   ; 918
+                        ds.l    1   ; 91c
+                        ds.l    1   ; 920
+                        ds.l    1   ; 924
+                        ds.l    1   ; 928
+                        ds.l    1   ; 92c
 
 PageMap                             ; whatever is left
 
@@ -542,6 +553,10 @@ DiagInfo ds NKDiagInfo
     ORG *-NKSystemInfo.Size
 SysInfo ds NKSystemInfo
     ORG *-NKSystemInfo.Size
+
+    ORG *-NKHWInfo.Size
+HWInfo ds NKHWInfo
+    ORG *-NKHWInfo.Size
 
     ORG 0xFC0
 InfoRecBlk              ds.b    64  ; fc0:1000 ; Access using ptr equates in InfoRecords

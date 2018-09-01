@@ -1,13 +1,18 @@
 KCallPowerDispatch
 ; Validate arguments. Why fail silently when r4 & CR != 0?
-    cmplwi  cr7, r3, 3
+    cmplwi  cr7, r3, 7
     and.    r8, r4, r13
     bgt     cr7, powRetNeg1
     bne     powRet0
 
     lwz     r9, KDP.CodeBase(r1)
 
-    stmw    r27, KDP.r27(r1)
+    stw     r26, CB.r26+4(r6)
+    stw     r27, CB.r27+4(r6)
+    stw     r28, CB.r28+4(r6)
+    stw     r29, CB.r29+4(r6)
+    stw     r30, CB.r30+4(r6)
+    stw     r31, CB.r31+4(r6)
 
     lwz     r31, KDP.VecTblSystem.SystemReset(r1)
     lwz     r30, KDP.VecTblSystem.External(r1)
@@ -17,6 +22,10 @@ KCallPowerDispatch
     stw     r28, KDP.VecTblSystem.Decrementer(r1)
 
     _kaddr  r28, r9, WakeFromNap
+
+    rlwinm  r26, r3, 0, 0x00000004
+    clrlwi  r3, r3, 30
+;    rlwinm  r3, r3, 0, 0xFFFFFFFE
 
 ; Set Hardware Imp-Dependent Reg 0 (HID0) bit in order to "flavour" MSR[POW]
     lbz     r8, KDP.PowerHID0Select(r1)     ; Q: DOZE, NAP or SLEEP?
@@ -49,10 +58,14 @@ KCallPowerDispatch
     lis     r8, 0x7fff
     mtdec   r8
 
+    cmplwi  r26, 4
+    beql    powNewThing
+
 ; Set MSR bits.  causes HID0[DOZE/NAP/SLEEP] to take effect
     mfmsr   r8
     _ori    r8, r8, MsrEE | MsrRI
     mtmsr   r8
+    isync
 
 ; Set MSR[POW] and wait for HID0 drugs to take effect
     cmplwi  r3, 0
@@ -82,7 +95,12 @@ WakeFromNap
     stw     r30, KDP.VecTblSystem.External(r1)
     stw     r31, KDP.VecTblSystem.SystemReset(r1)
 
-    lmw     r27, KDP.r27(r1)
+    lwz     r26, CB.r26+4(r6)
+    lwz     r27, CB.r27+4(r6)
+    lwz     r28, CB.r28+4(r6)
+    lwz     r29, CB.r29+4(r6)
+    lwz     r30, CB.r30+4(r6)
+    lwz     r31, CB.r31+4(r6)
 
 powRet0
     li      r3, 0
@@ -98,3 +116,25 @@ powIgnoreDecrementerInt
     mtlr    r1
     mfsprg  r1, 1
     rfi
+
+powNewThing
+    mfctr   r8
+    stw     r25, CB.r25+4(r6)
+    stw     r8, CB.CTR+4(r6)
+
+    lhz     r25, KDP.ProcInfo.DataCacheLineSize(r1)
+    cntlzw  r8, r25
+    subfic  r9, r8, 31
+    lwz     r8, KDP.ProcInfo.DataCacheTotalSize(r1)
+    srw     r8, r8, r9
+    mtctr   r8
+    lwz     r8, KDP.CodeBase(r1)
+@cachifyloop
+    lwzux   r9, r8, r25
+    bdnz    @cachifyloop
+
+    lwz     r8, CB.CTR+4(r6)
+    lwz     r25, CB.r25+4(r6)
+    sync
+    mtctr   r8
+    blr
