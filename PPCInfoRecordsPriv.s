@@ -100,7 +100,7 @@ NKSystemInfoPtr			equ		$5FFFEFF0	; logical address of NKSystemInfo record
 NKSystemInfoVer			equ		$5FFFEFF4	; version number of NKSystemInfo record
 NKSystemInfoLen			equ		$5FFFEFF6	; length of NKSystemInfo record
 
-kSystemInfoVer			equ		$0103
+kSystemInfoVer			equ		$0104
 
 NKSystemInfo			record	0,increment
 PhysicalMemorySize		ds.l	1			; 000 ; Number of bytes in Physical RAM
@@ -178,6 +178,23 @@ Bank25Size				ds.l	1			; 0fc ; Number of bytes in  RAM bank 25
 EndOfBanks
 						align	5			; pad to nice cache block alignment
 MaxBanks				equ		26			; 16 banks, 0...15
+
+											; Interrupt Support Data
+IntCntrBaseAddr			ds.l	1			; 100 ; Interrupt Controller Base Address  (variable is used since this is a PCI Dev and address is relocatable)
+IntPendingReg			ds.l 	2			; 104 ; Data of current interrupts pending register
+
+											; These fields were added to report information about tightly-coupled L2 caches.
+											; The inline L2 information should be used in situations where there is a CPU
+											; card L2 cache that can coexist with a motherboard L2.
+
+InlineL2DSize			ds.l	1			; 10c ; Size of in-line L2 Dcache
+InlineL2ISize			ds.l	1			; 110 ; Size of in-line L2 Icache
+InlineL2Combined		ds.w	1			; 114 ; 1 <- combined or no cache, 0 <- split cache
+InlineL2IBlockSize		ds.w	1			; 116 ; Block size of in-line I L2 cache
+InlineL2DBlockSize		ds.w	1			; 118 ; Block size of in-line D L2 cache
+InlineL2IAssoc			ds.w	1			; 11a ; Associativity of L2 I
+InlineL2DAssoc			ds.w	1			; 11c ; Associativity of L2 D
+						ds.w	1			; 11e ; pad
 Size					equ		*
 						endr
 
