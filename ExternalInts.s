@@ -42,6 +42,7 @@ GetExtIntHandler
     dc.w    ExtIntHandlerPBX - @table       ; 3
     dc.w    ExtIntHandlerCordyceps - @table ; 4
     dc.w    ExtIntHandlerAlchemy - @table   ; 5
+    dc.w    ExternalInt6 - @table           ; 6
     align   2
 @tableend
     mflr    r7              ; r7 points to @table now
@@ -546,3 +547,180 @@ ExtIntHandlerCordyceps
     lwz     r2, KDP.ClearIntMask(r1)        ; Clear an interrupt via Cond Reg
     and     r0, r0, r2
     b       @return
+
+########################################################################
+
+    _align kExternalIntAlign
+ExternalInt6
+    mfsprg  r1, 0
+    dcbz    0, r1
+    stw     r0, KDP.r0(r1)
+    stw     r2, KDP.r2(r1)
+    lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
+    stw     r3, KDP.r3(r1)
+    addi    r2, r2, 1
+    stw     r2, KDP.NKInfo.ExternalIntCount(r1)
+
+    mfmsr   r3
+    stw     r4, KDP.r4(r1)
+    stw     r5, KDP.r5(r1)
+    stw     r6, KDP.r6(r1)
+    stw     r7, KDP.r7(r1)
+    stw     r8, KDP.r8(r1)
+
+    mfsrr1  r5
+    mfcr    r0
+
+    lhz     r7, KDP.PageMap + PMDT.PageIdx(r1)
+    lwz     r2, KDP.SysInfo.IntCntrBaseAddr(r1)
+    cmpwi   r7, 0
+    beq     @lowfirstpmdt
+    and.    r6, r5, r2
+    beq     @skipheaps
+    li      r8, 0
+    cmplwi  r7, 1
+    ble     @stillnotgood
+
+    subi    r7, r7, 1
+    addi    r6, r1, KDP.PageMap + PMDT.PageCount
+    add     r6, r6, r7
+    lbz     r4, 0(r6)
+    lwz     r7, KDP.SysInfo.IntPendingReg(r1)
+    lis     r8, -0x8000
+    srw     r8, r8, r4
+    and.    r7, r7, r8
+    beq     @loc_5A54
+    lwz     r8, KDP.EmuIntLevelPtr(r1)
+    lhz     r8, 0(r8)
+    b       @stillnotgood
+
+@loc_5A54
+    subi    r6, r6, 1
+    lbz     r6, 0(r6)
+    ori     r8, r3, 0x10
+    lis     r7, 6
+    ori     r7, r7, 0xB0
+    add     r7, r7, r2
+    mfsrr0  r4
+    mtmsr   r8
+    isync
+    li      r8, 0
+    stw     r8, 0(r7)
+    eieio
+    lwz     r7, 0(r7)
+    cmpwi   r6, 0
+    beq     @loc_5AAC
+    lis     r8, 5
+    ori     r8, r8, 0
+    add     r8, r8, r2
+    rlwinm  r7, r6, 5,22,31
+    add     r8, r8, r7
+    lwz     r8, 0(r8)
+    extrwi  r8, r8, 4,20
+@loc_5AAC
+    lis     r7, 6
+    ori     r7, r7, 0x80
+    add     r7, r7, r2
+    stwbrx  r8, 0, r7
+    eieio
+    lwz     r7, 0(r7)
+    mtmsr   r3
+    isync
+    mtsrr0  r4
+    lhz     r7, KDP.PageMap + PMDT.PageIdx(r1)
+    subi    r7, r7, 1
+    sth     r7, KDP.PageMap + PMDT.PageIdx(r1)
+    b       @stillnotgood
+
+@skipheaps
+    ori     r7, r3, 0x10
+    lis     r6, 6
+    ori     r6, r6, 0xA0
+    add     r6, r6, r2
+    lis     r8, 5
+    ori     r8, r8, 0
+    add     r8, r8, r2
+    mfsrr0  r4
+    mtmsr   r7
+    isync
+    lwz     r6, 0(r6)
+    srwi    r6, r6, 24
+    cmplwi  r6, 0x13
+    bge     @loc_5BE4
+    rlwinm  r7, r6, 5,22,31
+    add     r8, r8, r7
+    lis     r7, 6
+    ori     r7, r7, 0x80
+    add     r7, r7, r2
+    lwz     r8, 0(r8)
+    extrwi  r8, r8, 4,20
+    stwbrx  r8, 0, r7
+    eieio
+    lwz     r7, 0(r7)
+    xori    r7, r3, 0x8000
+    mtmsr   r7
+    isync
+    mtsrr0  r4
+    lhz     r7, KDP.PageMap + PMDT.PageIdx(r1)
+    add     r4, r7, r1
+    addi    r7, r7, 1
+    stb     r6, KDP.PageMap + PMDT.PageCount(r4)
+    sth     r7, KDP.PageMap + PMDT.PageIdx(r1)
+    mtmsr   r3
+    isync
+    lwz     r7, KDP.SysInfo.IntPendingReg(r1)
+    lis     r4, -0x8000
+    srw     r4, r4, r6
+    or      r7, r7, r4
+    stw     r7, KDP.SysInfo.IntPendingReg(r1)
+@stillnotgood
+
+    mtsrr1  r5
+    lwz     r7, KDP.r7(r1)
+    lwz     r6, KDP.r6(r1)
+    lwz     r5, KDP.r5(r1)
+    lwz     r4, KDP.r4(r1)
+    lwz     r3, KDP.EmuIntLevelPtr(r1)
+    cmpwi   r8, 0
+    beq     @loc_5BA4
+    ori     r8, r8, 0x8000
+@loc_5BA4
+    sth     r8, 0(r3)
+    mfsprg  r2, 2
+    lwz     r8, KDP.r8(r1)
+    lwz     r3, KDP.r3(r1)
+    mtlr    r2
+    beq     @loc_5BD8
+    lwz     r2, KDP.PostIntMask(r1)
+    or      r0, r0, r2
+@loc_5BC4
+    mtcr    r0
+    lwz     r0, KDP.r0(r1)
+    lwz     r2, KDP.r2(r1)
+    mfsprg  r1, 1
+    rfi
+
+@loc_5BD8
+    lwz     r2, KDP.ClearIntMask(r1)
+    and     r0, r0, r2
+    b       @loc_5BC4
+
+@loc_5BE4
+    li      r8, 0
+    lis     r7, 6
+    ori     r7, r7, 0xB0
+    add     r7, r7, r2
+    stw     r8, 0(r7)
+    eieio
+    lwz     r7, 0(r7)
+    mtmsr   r3
+    isync
+    mtsrr0  r4
+    b       @stillnotgood
+
+@lowfirstpmdt
+    addi    r7, r7, 1
+    li      r8, 0
+    sth     r7, KDP.PageMap + PMDT.PageIdx(r1)
+    stw     r8, KDP.PageMap + PMDT.PageCount(r1)
+    b       @stillnotgood
