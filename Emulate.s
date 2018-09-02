@@ -3,6 +3,12 @@ InitEmulation
     _ori    r23, r23, EmAlways1
     _ori    r23, r23, EmAlways2
 
+; Very special case on late-revision 86/9600
+    mfpvr   r18
+    srwi    r18, r18, 16
+    cmpwi   r18, 96
+    beq     very_special_cpu
+
 ; Ignore Program Interrupts so we can blindly hit SPRs
     lwz     r21, KDP.CodeBase(r1)
     lwz     r20, KDP.VecTblSystem.Program(r1)
@@ -29,15 +35,18 @@ InitEmulation
     not     r19, r18
     mfspr   r19, sia
     xor     r19, r18, r19
-    or      r17, r17, r19
+    or.     r17, r17, r19
+    bne     @nommcr0
+    _ori    r23, r23, EmHasMMCR0
+@nommcr0
     mtspr   sda, r18        ; Sampled Data Reg
     not     r19, r18
     mfspr   r19, sda
     xor     r19, r18, r19
     or.     r17, r17, r19
-    bne     @nommcr0
-    _ori    r23, r23, EmHasMMCR0
-@nommcr0
+    bne     @nosda
+    _ori    r23, r23, EmHasSDA
+@nosda
 
 ; Test MMCR1 (perf monitor) and related registers
 mmcr1 equ 956
@@ -63,6 +72,7 @@ pmc4 equ 958
 
 ; Clean up and save flags
     stw     r20, KDP.VecTblSystem.Program(r1)
+very_special_cpu
     stw     r23, KDP.InstEmControl(r1)
 
 ; Use long division to calculate TB tick -> RTC nanosec scaling factor
@@ -653,8 +663,10 @@ Em10011 ;              (21----30)
     beq     cr1, @mfpmc2
     _csprnm cr1, r19, sia
     beq     cr1, @mfsia
+    bc      BO_IF_NOT, bEmHasSDA, @nosda
     _csprnm cr1, r19, sda
     beq     cr1, @mfsda
+@nosda
     bc      BO_IF_NOT, bEmHasMMCR1, PrivIllegalInst
     _csprnm cr1, r19, mmcr1
     beq     cr1, @mfmmcr1
@@ -768,8 +780,10 @@ Em10011 ;              (21----30)
     beq     cr1, FDP_1A34
     _csprnm cr1, r19, 955
     beq     cr1, FDP_1A3C
+    bc      BO_IF_NOT, bEmHasSDA, @nowsda
     _csprnm cr1, r19, 959
     beq     cr1, FDP_1A5C
+@nowsda
     bc      BO_IF_NOT, bEmHasMMCR1, PrivIllegalInst
     _csprnm cr1, r19, 956
     beq     cr1, FDP_1A44

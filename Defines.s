@@ -99,8 +99,9 @@ mrChangedRegInEWA   equ cr3_so ; have "loaded" a new reg value (i.e. saved into 
 
     _bitequate 14, EmAlways1
     _bitequate 15, EmAlways2
-    _bitequate 18, EmHasMMCR0
+    _bitequate 18, EmHasSDA
     _bitequate 19, EmHasMMCR1
+    _bitequate 20, EmHasMMCR0
 
 ########################################################################
 

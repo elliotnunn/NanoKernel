@@ -4,7 +4,7 @@ kSoftIntAlign equ 5
 
 ########################################################################
 
-    _align kSoftIntAlign
+    _align 6
 PerfMonitorInt
     mfsprg  r1, 2       ; Both r1 and LR are clobbered on entry,
     mtlr    r1          ; so might as well use r1 for scratch as
