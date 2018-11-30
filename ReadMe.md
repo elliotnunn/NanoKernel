@@ -39,3 +39,7 @@ into several useful formats named `NanoKernelBuild*`.
 
 - early-1995 PDM spec bump
 
+## Cordyceps 6
+
+- built 1995-03-24 Power Mac/Performa 5200, 5300, 6200, 6300
+
