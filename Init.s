@@ -3,13 +3,12 @@ rCI set r3 ; NKConfigurationInfo
 rPI set r4 ; NKProcessorInfo
 rSI set r5 ; NKSystemInfo
 rDI set r6 ; NKDiagInfo
+;       r7 ; 'RTAS' if present
+;       r8 ; RTAS proc if present
+rHI set r9 ; NKHWInfo
 
 ;   Other registers we use
 rED set r8 ; Emulator Data Page
-
-########################################################################
-
-    bl      GetExtIntHandler ; returned in r7
 
 ########################################################################
 
@@ -141,6 +140,25 @@ InitKernelMemory
 
 InitInfoRecords
 ; Get copies of the PowerPC Info Records from HardwareInit
+    lisori  r12, 'RTAS'
+    cmpw    r7, r12
+    bne     @nortas
+    stw     r8, KDP.RTASDispatch(r1)
+    lwz     r7, NKHWInfo.RTAS_PrivDataArea(rHI)
+    stw     r7, KDP.RTASData(r1)
+    addi    r11, r1, KDP.HWInfo
+    li      r10, NKHWInfo.Size
+@loop
+    subic.  r10, r10, 4
+    lwzx    r12, rHI, r10
+    stwx    r12, r11, r10
+    bgt     @loop
+    b       @done
+@nortas
+    stw     r0, KDP.RTASDispatch(r1)
+    stw     r0, KDP.RTASData(r1)
+@done
+
     addi    r11, r1, KDP.ProcInfo
     li      r10, NKProcessorInfo.Size
 @copyprocinfo
@@ -168,6 +186,8 @@ InitInfoRecords
 ########################################################################
 
 InitKernelData
+    bl      GetExtIntHandler ; moved here to free up r7 for return val
+
     stw     rCI, KDP.ConfigInfoPtr(r1)
 
     stw     r7, KDP.IntHandlerPtr(r1)
@@ -251,9 +271,12 @@ InitInfoRecordPointers
     stw     r12, 0xFC8(r1)
     stw     r0, 0xFCC(r1)
 
-    addi    r12, r11, 0xFD0
-    stw     r12, 0xFD0(r1)
-    stw     r0, 0xFD4(r1)
+    addi    r12, r11, KDP.HWInfo
+    stw     r12, NKHWInfoPtr & 0xFFF(r1)
+    li      r12, kHWInfoVer
+    sth     r12, NKHWInfoVer & 0xFFF(r1)
+    li      r12, NKHWInfo.Size
+    sth     r12, NKHWInfoLen & 0xFFF(r1)
 
     addi    r12, r11, KDP.ProcInfo
     stw     r12, NKProcessorInfoPtr & 0xFFF(r1)

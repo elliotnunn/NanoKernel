@@ -335,3 +335,86 @@ OvrEnd
 						align	5			; pad to nice cache block alignment
 Size					equ		*
 						endr
+
+
+
+
+;_______________________________________________________________________
+;	Hardware Info Record
+;
+;	Used to pass hardware information from the NanoKernel to user mode
+;	software.
+;_______________________________________________________________________
+
+NKHWInfoPtr				equ		$5FFFEFD0	; logical address of HWInfo record
+NKHWInfoVer				equ		$5FFFEFD4	; version number of HWInfo record
+NKHWInfoLen				equ		$5FFFEFD6	; length of HWInfo record
+
+kHWInfoVer				equ		$0100
+
+NKHWInfo				record	0,increment
+											; interrupt pending bits (actively changing)
+
+PendingInts				ds.l	2			; 028 ; 64 bits of pending interrupts
+
+											; some Mac I/O device base addresses
+
+ADB_Base				ds.l	1			; 030 ; base address of ADB
+SCSI_DMA_Base			ds.l	1			; 034 ; base address of SCSI DMA registers
+
+											; RTAS related stuff
+
+RTAS_PrivDataArea		ds.l	1			; 038 ; RTAS private data area 
+MacOS_NVRAM_Offset		ds.l	1			; 03c ; offset into nvram to MacOS data
+
+RTAS_NVRAM_Fetch		ds.l	1			; 040 ; token for RTAS NVRAM fetch
+RTAS_NVRAM_Store		ds.l	1			; 044 ; token for RTAS NVRAM store
+RTAS_Get_Clock			ds.l	1			; 048 ; token for RTAS clock get
+RTAS_Set_Clock			ds.l	1			; 04c ; token for RTAS clock set
+RTAS_Restart			ds.l	1			; 050 ; token for RTAS Restart
+RTAS_Shutdown			ds.l	1			; 054 ; token for RTAS Shutdown
+RTAS_Restart_At			ds.l	1			; 058 ; token for RTAS system startup at specified time
+RTAS_EventScan			ds.l	1			; 05c ; token for RTAS event scan
+RTAS_Check_Exception	ds.l	1			; 060 ; token for RTAS check exception
+RTAS_Read_PCI_Config	ds.l	1			; 064 ; token for RTAS read PCI config
+RTAS_Write_PCI_Config	ds.l	1			; 068 ; token for RTAS write PCI config
+
+											; SIO interrupt source numbers for the MPIC
+
+SIOIntVect				ds.w	1			; 06c ; SIO (8259 cascade vector) vector number
+SIOIntBit				ds.w	1			; 06e ; SIO (8259 cascade vector) bit number
+
+Signature				ds.l	1			; 070 ; signature for this record ('Hnfo')
+
+											; more interrupt source numbers
+
+SpuriousIntVect			ds.w	1			; 074 ; spurious vector number
+
+CPU_ID					ds.w	1			; 076 ; the ID of this CPU (universal-tables-related)
+
+SCCAIntVect				ds.w	1			; 078 ; SCC A (non-DMA) vector number
+SCCBIntVect				ds.w	1			; 07a ; SCC B (non-DMA) vector number
+SCSIIntVect				ds.w	1			; 07c ; SCSI vector number
+SCSIDMAIntVect			ds.w	1			; 07e ; SCSI DMA vector number
+VIAIntVect				ds.w	1			; 080 ; VIA vector number
+VIAIntBit				ds.w	1			; 082 ; VIA bit number
+ADBIntVect				ds.w	1			; 084 ; vector number
+NMIIntVect				ds.w	1			; 086 ; NMI vector number
+NMIIntBit				ds.w	1			; 088 ; NMI bit number
+
+											; current (actively changing) interrupt handling variables
+
+ISAPendingInt			ds.w	1			; 08a ; currently pending ISA/8259 interrupt
+CompletedInts			ds.b	8			; 08c ; completed interrupts
+
+nkHWInfoFlagSlowMESH	equ		1			; set if fast MESH doesn't work on this box
+nkHWInfoFlagAsynchMESH	equ		2			; set if Synchronous MESH doesn't work on this box
+nkHWInfoFlagNoCopySWTLB	equ		4			; set if the software TLB walk code for 603 should NOT be copied
+HardwareInfoFlags		ds.l	1			; 094 ; 32 bits of flags (see enum above)
+
+RTAS_Get_PowerOn_Time	ds.l	1			; 098 ; token for RTAS getting time for system startup
+
+						align	5			; pad to nice cache block alignment
+ DS.B 96 ; no clue at all what these bytes are for, but they won't last
+Size					equ		*
+						endr
