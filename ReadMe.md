@@ -49,3 +49,7 @@ into several useful formats named `NanoKernelBuild*`.
 - 1995-05-18 Power Mac 7200, 7500, 8500, 9500
 - 1995-06-29 PowerBook 2300 (and 500 series PowerPC upgrade)
 
+## Alchemy 0.1
+
+- 1996-01-26 Power Mac/Performa 6400
+
