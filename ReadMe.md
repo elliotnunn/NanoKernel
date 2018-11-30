@@ -43,3 +43,9 @@ into several useful formats named `NanoKernelBuild*`.
 
 - built 1995-03-24 Power Mac/Performa 5200, 5300, 6200, 6300
 
+## TNT 0.1, PBX 603 0.0
+
+- 1995-04-21 Power Mac 7200, 7500, 8500, 9500
+- 1995-05-18 Power Mac 7200, 7500, 8500, 9500
+- 1995-06-29 PowerBook 2300 (and 500 series PowerPC upgrade)
+
