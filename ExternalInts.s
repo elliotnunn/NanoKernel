@@ -43,6 +43,8 @@ GetExtIntHandler
     dc.w    ExtIntHandlerCordyceps - @table ; 4
     dc.w    ExtIntHandlerAlchemy - @table   ; 5
     dc.w    ExternalInt6 - @table           ; 6
+    dc.w    ExternalInt7 - @table           ; 7
+    dc.w    ExternalInt8 - @table           ; 8
     align   2
 @tableend
     mflr    r7              ; r7 points to @table now
@@ -306,18 +308,30 @@ ExtIntHandlerAlchemy
     stw     r4, KDP.r4(r1)
     stw     r5, KDP.r5(r1)
     stw     r6, KDP.r6(r1)
+    stw     r7, KDP.r7(r1)
+    stw     r8, KDP.r8(r1)
     mfsrr0  r4
     mfsrr1  r5
     mtmsr   r3
     isync
+    li      r6, 0x20
+    lwbrx   r7, r6, r2
+    rlwinm  r7, r7, 1, 1, 1
+    eieio
     lis     r3, 0x8000
     li      r6, 0x28
     stwbrx  r3, r6, 2
     eieio
     li      r6, 0x24
     lwbrx   r3, r6, r2
+    mr      r8, r3
+    rlwinm  r8, r8, 1, 1, 1
+    and     r8, r7, r8
+    or      r3, r8, r3
+    stwbrx  r3, r6, r2
     li      r6, 0x2C
     lwbrx   r6, r6, r2
+    or      r6, r7, r6
     and     r3, r6, r3
     eieio
     mtmsr   r0
@@ -327,6 +341,8 @@ ExtIntHandlerAlchemy
     lwz     r4, KDP.r4(r1)
     lwz     r5, KDP.r5(r1)
     lwz     r6, KDP.r6(r1)
+    lwz     r7, KDP.r7(r1)
+    lwz     r8, KDP.r8(r1)
 
     mfcr    r0
                                             ; Interpret OpenPic result:
@@ -348,6 +364,10 @@ ExtIntHandlerAlchemy
     li      r2, 2
     bne     @gotnum
 
+    andis.  r2, r3, 0x4000                  ; bit 17 -> 2
+    li      r2, 2
+    bne     @gotnum
+
     andis.  r2, r3, 0x0004                  ; bit 13 -> 1
     li      r2, 1
     bne     @gotnum
@@ -356,6 +376,7 @@ ExtIntHandlerAlchemy
 
 @gotnum
     lwz     r3, KDP.EmuIntLevelPtr(r1)
+    ori     r2, r2, 0x8000
     sth     r2, 0(r3)
     mfsprg  r2, 2
     lwz     r3, KDP.r3(r1)
@@ -448,6 +469,93 @@ ExtIntHandlerTNT
 
 @gotnum
     lwz     r3, KDP.EmuIntLevelPtr(r1)
+    ori     r2, r2, 0x8000
+    sth     r2, 0(r3)
+    mfsprg  r2, 2
+    lwz     r3, KDP.r3(r1)
+    mtlr    r2
+    beq     @clear                          ; 0 -> clear interrupt
+                                            ; nonzero -> post interrupt
+
+    lwz     r2, KDP.PostIntMask(r1)         ; Post an interrupt via Cond Reg
+    or      r0, r0, r2
+
+@return
+    mtcr    r0                              ; Set CR and return
+    lwz     r0, KDP.r0(r1)
+    lwz     r2, KDP.r2(r1)
+    mfsprg  r1, 1
+    rfi
+
+@clear
+    lwz     r2, KDP.ClearIntMask(r1)        ; Clear an interrupt via Cond Reg
+    and     r0, r0, r2
+    b       @return
+
+########################################################################
+; Copied from TNT int handler
+
+    _align kExternalIntAlign
+ExternalInt7
+    mfsprg  r1, 0                           ; Init regs and increment ctr
+    dcbz    0, r1
+    stw     r0, KDP.r0(r1)
+    stw     r2, KDP.r2(r1)
+    lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
+    stw     r3, KDP.r3(r1)
+    addi    r2, r2, 1
+    stw     r2, KDP.NKInfo.ExternalIntCount(r1)
+
+    lis     r2, 0xF300          ; r3 - base address of GrandCentral
+    mfmsr   r0
+    _ori    r3, r0, MsrDR
+    stw     r4, KDP.r4(r1)
+    stw     r5, KDP.r5(r1)
+    stw     r6, KDP.r6(r1)
+    mfsrr0  r4
+    mfsrr1  r5
+    mtmsr   r3                  ; enable data address translation
+    isync
+    lis     r3, 0x8000
+    li      r6, 0x28            ; r6 - offset to interrupt clear register
+    stwbrx  r3, r6, r2          ; write byte-reversed ifMode1Clear flag
+    eieio
+    li      r6, 0x24            ; r6 - offset to interrupt mask register
+    lwbrx   r3, r6, r2
+    li      r6, 0x2C            ; r6 - offset to interrupt levels register
+    lwbrx   r6, r6, r2          ; r3 = READ_LE_DWORD(GC[IntLevels] &
+    and     r3, r6, r3          ;      READ_LE_DWORD(GC[IntMask])
+    eieio
+    mtmsr   r0                  ; disable data address translation
+    isync
+    mtsrr0  r4
+    mtsrr1  r5
+    lwz     r4, KDP.r4(r1)
+    lwz     r5, KDP.r5(r1)
+    lwz     r6, KDP.r6(r1)
+
+    mfcr    r0                  ; reset CR
+
+    rlwinm. r2, r3, 0, 11, 11   ; set IPL to 7
+    li      r2, 7               ; if ExtNMI IRQ is asserted
+    bne     @gotnum             ;
+
+    rlwinm  r2, r3, 0, 15, 16   ; SCC A and SCC B
+    rlwimi. r2, r3, 0, 22, 31   ; together with all DMA IRQs
+    li      r2, 4               ; will get the priority level 4
+    bne     @gotnum
+
+    andis.  r2, r3, 0x5FEA      ; all other devices including SCSI, PCI, Audio,
+    rlwimi. r2, r3, 0, 17, 20   ; Floppy etc. except VIA1
+    li      r2, 2               ; will get the priority level 2
+    bne     @gotnum
+
+    extrwi. r2, r3, 1, 13       ; bit 13 -> IPL 1 (VIA1)
+                                ; else -> IPL 0
+
+@gotnum
+    lwz     r3, KDP.EmuIntLevelPtr(r1)
+    ori     r2, r2, 0x8000
     sth     r2, 0(r3)
     mfsprg  r2, 2
     lwz     r3, KDP.r3(r1)
@@ -574,18 +682,19 @@ ExternalInt6
     mfsrr1  r5
     mfcr    r0
 
-    lhz     r7, KDP.PageMap + PMDT.PageIdx(r1)
+    lhz     r7, KDP.IntBlah1(r1)
     lwz     r2, KDP.SysInfo.IntCntrBaseAddr(r1)
+    addis   r2, r2, 4
     cmpwi   r7, 0
     beq     @lowfirstpmdt
-    and.    r6, r5, r2
+    andis.  r6, r5, 2
     beq     @skipheaps
     li      r8, 0
     cmplwi  r7, 1
     ble     @stillnotgood
 
     subi    r7, r7, 1
-    addi    r6, r1, KDP.PageMap + PMDT.PageCount
+    addi    r6, r1, KDP.IntBlah2
     add     r6, r6, r7
     lbz     r4, 0(r6)
     lwz     r7, KDP.SysInfo.IntPendingReg(r1)
@@ -601,7 +710,7 @@ ExternalInt6
     subi    r6, r6, 1
     lbz     r6, 0(r6)
     ori     r8, r3, 0x10
-    lis     r7, 6
+    lis     r7, 2
     ori     r7, r7, 0xB0
     add     r7, r7, r2
     mfsrr0  r4
@@ -610,37 +719,35 @@ ExternalInt6
     li      r8, 0
     stw     r8, 0(r7)
     eieio
-    lwz     r7, 0(r7)
-    cmpwi   r6, 0
+    cmpwi   r6, -1
     beq     @loc_5AAC
-    lis     r8, 5
-    ori     r8, r8, 0
+    lis     r8, 1
+    ori     r8, r8, 0    
     add     r8, r8, r2
     rlwinm  r7, r6, 5,22,31
     add     r8, r8, r7
     lwz     r8, 0(r8)
     extrwi  r8, r8, 4,20
 @loc_5AAC
-    lis     r7, 6
+    lis     r7, 2
     ori     r7, r7, 0x80
     add     r7, r7, r2
     stwbrx  r8, 0, r7
     eieio
-    lwz     r7, 0(r7)
     mtmsr   r3
     isync
     mtsrr0  r4
-    lhz     r7, KDP.PageMap + PMDT.PageIdx(r1)
+    lhz     r7, KDP.IntBlah1(r1)
     subi    r7, r7, 1
-    sth     r7, KDP.PageMap + PMDT.PageIdx(r1)
+    sth     r7, KDP.IntBlah1(r1)
     b       @stillnotgood
 
 @skipheaps
     ori     r7, r3, 0x10
-    lis     r6, 6
+    lis     r6, 2
     ori     r6, r6, 0xA0
     add     r6, r6, r2
-    lis     r8, 5
+    lis     r8, 1
     ori     r8, r8, 0
     add     r8, r8, r2
     mfsrr0  r4
@@ -652,25 +759,21 @@ ExternalInt6
     bge     @loc_5BE4
     rlwinm  r7, r6, 5,22,31
     add     r8, r8, r7
-    lis     r7, 6
+    lis     r7, 2
     ori     r7, r7, 0x80
     add     r7, r7, r2
     lwz     r8, 0(r8)
     extrwi  r8, r8, 4,20
     stwbrx  r8, 0, r7
     eieio
-    lwz     r7, 0(r7)
-    xori    r7, r3, 0x8000
-    mtmsr   r7
-    isync
-    mtsrr0  r4
-    lhz     r7, KDP.PageMap + PMDT.PageIdx(r1)
-    add     r4, r7, r1
-    addi    r7, r7, 1
-    stb     r6, KDP.PageMap + PMDT.PageCount(r4)
-    sth     r7, KDP.PageMap + PMDT.PageIdx(r1)
     mtmsr   r3
     isync
+    mtsrr0  r4
+    lhz     r7, KDP.IntBlah1(r1)
+    add     r4, r7, r1
+    addi    r7, r7, 1
+    stb     r6, KDP.IntBlah2(r4)
+    sth     r7, KDP.IntBlah1(r1)
     lwz     r7, KDP.SysInfo.IntPendingReg(r1)
     lis     r4, -0x8000
     srw     r4, r4, r6
@@ -709,13 +812,11 @@ ExternalInt6
     b       @loc_5BC4
 
 @loc_5BE4
-    li      r8, 0
-    lis     r7, 6
-    ori     r7, r7, 0xB0
+    lis     r7, 2
+    ori     r7, r7, 0x80
     add     r7, r7, r2
-    stw     r8, 0(r7)
-    eieio
-    lwz     r7, 0(r7)
+    lwz     r8, 0(r7)
+    extrwi  r8, r8, 4, 20
     mtmsr   r3
     isync
     mtsrr0  r4
@@ -723,7 +824,194 @@ ExternalInt6
 
 @lowfirstpmdt
     addi    r7, r7, 1
+    li      r8, -1
+    sth     r7, KDP.IntBlah1(r1)
+    stw     r8, KDP.IntBlah2(r1)
     li      r8, 0
-    sth     r7, KDP.PageMap + PMDT.PageIdx(r1)
-    stw     r8, KDP.PageMap + PMDT.PageCount(r1)
+    b       @stillnotgood
+
+########################################################################
+; Copied from ExternalInt6
+
+    _align kExternalIntAlign
+ExternalInt8
+    mfsprg  r1, 0
+    dcbz    0, r1
+    stw     r0, KDP.r0(r1)
+    stw     r2, KDP.r2(r1)
+    lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
+    stw     r3, KDP.r3(r1)
+    addi    r2, r2, 1
+    stw     r2, KDP.NKInfo.ExternalIntCount(r1)
+
+    mfmsr   r3
+    stw     r4, KDP.r4(r1)
+    stw     r5, KDP.r5(r1)
+    stw     r6, KDP.r6(r1)
+    stw     r7, KDP.r7(r1)
+    stw     r8, KDP.r8(r1)
+
+    mfsrr1  r5
+    mfcr    r0
+
+    lhz     r7, KDP.IntBlah1(r1)
+    lwz     r2, KDP.SysInfo.IntCntrBaseAddr(r1)
+    addis   r2, r2, 4
+    cmpwi   r7, 0
+    beq     @lowfirstpmdt
+    andis.  r6, r5, 2
+    beq     @skipheaps
+    li      r8, 0
+    cmplwi  r7, 1
+    ble     @stillnotgood
+
+    subi    r7, r7, 1
+    addi    r6, r1, KDP.IntBlah2
+    add     r6, r6, r7
+    lbz     r4, 0(r6)
+    lwz     r7, KDP.SysInfo.IntPendingReg(r1)
+    lis     r8, -0x8000
+    srw     r8, r8, r4
+    and.    r7, r7, r8
+    beq     @loc_5A54
+    lwz     r8, KDP.EmuIntLevelPtr(r1)
+    lhz     r8, 0(r8)
+    b       @stillnotgood
+
+@loc_5A54
+    subi    r6, r6, 1
+    lbz     r6, 0(r6)
+    ori     r8, r3, 0x10
+    lis     r7, 2
+    ori     r7, r7, 0xB0
+    add     r7, r7, r2
+    mfsrr0  r4
+    mtmsr   r8
+    isync
+    li      r8, 0
+    stw     r8, 0(r7)
+    eieio
+    cmpwi   r6, 0xFF
+    beq     @loc_5AAC
+    lis     r8, 1
+    ori     r8, r8, 0    
+    add     r8, r8, r2
+    rlwinm  r7, r6, 5,21,31
+    add     r8, r8, r7
+    lwz     r8, 0(r8)
+    extrwi  r8, r8, 4,20
+@loc_5AAC
+    lis     r7, 2
+    ori     r7, r7, 0x80
+    add     r7, r7, r2
+    stwbrx  r8, 0, r7
+    eieio
+    mtmsr   r3
+    isync
+    mtsrr0  r4
+    lhz     r7, KDP.IntBlah1(r1)
+    subi    r7, r7, 1
+    sth     r7, KDP.IntBlah1(r1)
+    b       @stillnotgood
+
+@skipheaps
+    ori     r7, r3, 0x10
+    lis     r6, 2
+    ori     r6, r6, 0xA0
+    add     r6, r6, r2
+    lis     r8, 1
+    ori     r8, r8, 0
+    add     r8, r8, r2
+    mfsrr0  r4
+    mtmsr   r7
+    isync
+    lwz     r6, 0(r6)
+    srwi    r6, r6, 24
+    cmplwi  r6, 0x24
+    bge     @loc_5BE4
+    rlwinm  r7, r6, 5,21,31
+    add     r8, r8, r7
+    lis     r7, 2
+    ori     r7, r7, 0x80
+    add     r7, r7, r2
+    lwz     r8, 0(r8)
+    extrwi  r8, r8, 4,20
+    stwbrx  r8, 0, r7
+    eieio
+
+    cmpwi   r6, 0x20
+    bne     @not20
+    li      r6, 0x18
+@not20
+    cmpwi   r6, 0x21
+    bne     @not21
+    li      r6, 0x0D
+@not21
+    cmpwi   r6, 0x22
+    bne     @not22
+    li      r6, 0x1A
+@not22
+
+    mtmsr   r3
+    isync
+    mtsrr0  r4
+    lhz     r7, KDP.IntBlah1(r1)
+    add     r4, r7, r1
+    addi    r7, r7, 1
+    stb     r6, KDP.IntBlah2(r4)
+    sth     r7, KDP.IntBlah1(r1)
+    lwz     r7, KDP.SysInfo.IntPendingReg(r1)
+    lis     r4, -0x8000
+    srw     r4, r4, r6
+    or      r7, r7, r4
+    stw     r7, KDP.SysInfo.IntPendingReg(r1)
+@stillnotgood
+
+    mtsrr1  r5
+    lwz     r7, KDP.r7(r1)
+    lwz     r6, KDP.r6(r1)
+    lwz     r5, KDP.r5(r1)
+    lwz     r4, KDP.r4(r1)
+    lwz     r3, KDP.EmuIntLevelPtr(r1)
+    cmpwi   r8, 0
+    beq     @loc_5BA4
+    ori     r8, r8, 0x8000
+@loc_5BA4
+    sth     r8, 0(r3)
+    mfsprg  r2, 2
+    lwz     r8, KDP.r8(r1)
+    lwz     r3, KDP.r3(r1)
+    mtlr    r2
+    beq     @loc_5BD8
+    lwz     r2, KDP.PostIntMask(r1)
+    or      r0, r0, r2
+@loc_5BC4
+    mtcr    r0
+    lwz     r0, KDP.r0(r1)
+    lwz     r2, KDP.r2(r1)
+    mfsprg  r1, 1
+    rfi
+
+@loc_5BD8
+    lwz     r2, KDP.ClearIntMask(r1)
+    and     r0, r0, r2
+    b       @loc_5BC4
+
+@loc_5BE4
+    lis     r7, 2
+    ori     r7, r7, 0x80
+    add     r7, r7, r2
+    lwz     r8, 0(r7)
+    extrwi  r8, r8, 4, 20
+    mtmsr   r3
+    isync
+    mtsrr0  r4
+    b       @stillnotgood
+
+@lowfirstpmdt
+    addi    r7, r7, 1
+    li      r8, -1
+    sth     r7, KDP.IntBlah1(r1)
+    stw     r8, KDP.IntBlah2(r1)
+    li      r8, 0
     b       @stillnotgood
