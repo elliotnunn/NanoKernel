@@ -53,3 +53,7 @@ into several useful formats named `NanoKernelBuild*`.
 
 - 1996-01-26 Power Mac/Performa 6400
 
+## Gazelle 0.1
+
+- 1996-11-14 Power Mac 6500
+
