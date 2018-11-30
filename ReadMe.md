@@ -31,3 +31,9 @@ into several useful formats named `NanoKernelBuild*`.
 
 # Running Release History
 
+## PDM 601 1.0
+
+First Power Macintosh!
+
+- 1994-03-14 Power Mac 6100, 7100, 8100
+- 1994-04-25 Workgroup Server 9150
