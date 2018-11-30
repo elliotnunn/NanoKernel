@@ -33,7 +33,9 @@ into several useful formats named `NanoKernelBuild*`.
 
 ## PDM 601 1.0
 
-First Power Macintosh!
+- all 1994 Power Macs (6100/7100/8100 and Workgroup Servers)
 
-- 1994-03-14 Power Mac 6100, 7100, 8100
-- 1994-04-25 Workgroup Server 9150
+## PDM 601 1.1
+
+- early-1995 PDM spec bump
+
