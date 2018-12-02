@@ -7,7 +7,12 @@ KCallPowerDispatch
 
     lwz     r9, KDP.CodeBase(r1)
 
-    stmw    r27, KDP.r27(r1)
+    stw     r26, CB.r26+4(r6)
+    stw     r27, CB.r27+4(r6)
+    stw     r28, CB.r28+4(r6)
+    stw     r29, CB.r29+4(r6)
+    stw     r30, CB.r30+4(r6)
+    stw     r31, CB.r31+4(r6)
 
     lwz     r31, KDP.VecTblSystem.SystemReset(r1)
     lwz     r30, KDP.VecTblSystem.External(r1)
@@ -59,6 +64,7 @@ KCallPowerDispatch
     mfmsr   r8
     _ori    r8, r8, MsrEE | MsrRI
     mtmsr   r8
+    isync
 
 ; Set MSR[POW] and wait for HID0 drugs to take effect
     cmplwi  r3, 0
@@ -88,7 +94,12 @@ WakeFromNap
     stw     r30, KDP.VecTblSystem.External(r1)
     stw     r31, KDP.VecTblSystem.SystemReset(r1)
 
-    lmw     r27, KDP.r27(r1)
+    lwz     r26, CB.r26+4(r6)
+    lwz     r27, CB.r27+4(r6)
+    lwz     r28, CB.r28+4(r6)
+    lwz     r29, CB.r29+4(r6)
+    lwz     r30, CB.r30+4(r6)
+    lwz     r31, CB.r31+4(r6)
 
 powRet0
     li      r3, 0
