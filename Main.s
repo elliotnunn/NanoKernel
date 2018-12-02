@@ -29,5 +29,6 @@ MRBase
     include 'SoftInts.s'
     include 'VirtualMem.s'
     include 'Power.s'
+    include 'Cache.s'
     include 'RTAS.s'
     include 'ExternalInts.s'

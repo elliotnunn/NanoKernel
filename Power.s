@@ -1,6 +1,6 @@
 KCallPowerDispatch
 ; Validate arguments. Why fail silently when r4 & CR != 0?
-    cmplwi  cr7, r3, 3
+    cmplwi  cr7, r3, 7                      ; selector 0-3 + flush-cache bit 4
     and.    r8, r4, r13
     bgt     cr7, powRetNeg1
     bne     powRet0
@@ -17,6 +17,9 @@ KCallPowerDispatch
     stw     r28, KDP.VecTblSystem.Decrementer(r1)
 
     _kaddr  r28, r9, WakeFromNap
+
+    rlwinm  r26, r3, 0, 4                   ; Mask out flush-cache bit,
+    clrlwi  r3, r3, 30                      ; removing it from selector
 
 ; Set Hardware Imp-Dependent Reg 0 (HID0) bit in order to "flavour" MSR[POW]
     lbz     r8, KDP.PowerHID0Select(r1)     ; Q: DOZE, NAP or SLEEP?
@@ -48,6 +51,9 @@ KCallPowerDispatch
     mfdec   r28
     lis     r8, 0x7fff
     mtdec   r8
+
+    cmplwi  r26, 4
+    beql    FlushCaches
 
 ; Set MSR bits.  causes HID0[DOZE/NAP/SLEEP] to take effect
     mfmsr   r8
