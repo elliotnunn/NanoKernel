@@ -619,6 +619,25 @@ HID0EnableTable ; 0=disable, 1=HID0[NHR], 2=HID0[NHR+DOZE/NAP/SLEEP]
     dc.b    1           ; PVR D
     dc.b    1           ; PVR E
     dc.b    1           ; PVR F
+ProcessorFlagsTable ; for NKProcessorInfo.ProcessorFlags
+    WITH NKProcessorInfo
+    dc.l    0                                                           ; PVR 0
+    dc.l    0                                                           ; PVR 1
+    dc.l    0                                                           ; PVR 2
+    dc.l    0                                                           ; PVR 3
+    dc.l    0                                                           ; PVR 4
+    dc.l    0                                                           ; PVR 5
+    dc.l    0                                                           ; PVR 6
+    dc.l    0                                                           ; PVR 7
+    dc.l    (1<<hasL2CR) + (1<<hasPLRUL1) + (1<<hasTAU)                 ; PVR 8
+    dc.l    0                                                           ; PVR 9
+    dc.l    0                                                           ; PVR A
+    dc.l    0                                                           ; PVR B
+    dc.l    (1<<hasL2CR) + (1<<hasPLRUL1) + (1<<hasTAU) + (1<<hasVMX)   ; PVR C
+    dc.l    0                                                           ; PVR D
+    dc.l    0                                                           ; PVR E
+    dc.l    0                                                           ; PVR F
+    ENDWITH
 
 ########################################################################
 

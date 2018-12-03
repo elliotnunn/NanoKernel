@@ -145,6 +145,16 @@ ResetPowerInfo
 
 ########################################################################
 
+ResetProcessorFlags
+    mfpvr   r23
+    srwi    r23, r23, 16
+    slwi    r23, r23, 2
+    add     r8, rNK, r23
+    lwz     r23, ProcessorFlagsTable-CodeBase(r8)
+    stw     r23, KDP.ProcInfo.ProcessorFlags(r1)
+
+########################################################################
+
 ResetNCBPointerCache
     _clrNCBCache scr=r23
 

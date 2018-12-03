@@ -306,7 +306,7 @@ NKProcessorInfoPtr		equ		$5FFFEFD8	; logical address of ProcessorInfo record
 NKProcessorInfoVer		equ		$5FFFEFDC	; version number of ProcessorInfo record
 NKProcessorInfoLen		equ		$5FFFEFDE	; length of ProcessorInfo record
 
-kProcessorInfoVer		equ		$0100
+kProcessorInfoVer		equ		$0101
 
 NKProcessorInfo			record	0,increment
 ProcessorVersionReg		ds.l	1			; 000 ; contents of the PVR special purpose register
@@ -332,6 +332,26 @@ DataCacheAssociativity	ds.w	1			; 02e ; Associativity of the Data Cache
 TransCacheTotalSize		ds.w	1			; 030 ; number of entries in the Translation Cache
 TransCacheAssociativity	ds.w	1			; 032 ; Associativity of the Translation Cache
 OvrEnd
+
+;	These fields were added to report information about back-side L2 caches
+
+ProcessorL2DSize		ds.l	1			; 034 ; Size of back-side L2 Dcache
+ProcessorL2ISize		ds.l	1			; 038 ; Size of back-side L2 Icache
+ProcessorL2Combined		ds.w	1			; 03c ; 1 <- combined or no cache, 0 <- split cache
+ProcessorL2IBlockSize	ds.w	1			; 03e ; Block size of back-side I L2 cache
+ProcessorL2DBlockSize	ds.w	1			; 040 ; Block size of back-side D L2 cache
+ProcessorL2IAssoc		ds.w	1			; 042 ; Associativity of L2 I
+ProcessorL2DAssoc		ds.w	1			; 044 ; Associativity of L2 D
+
+filler1					ds.w	1			; 046 ; align to long
+
+;	   ProcessorFlags - Definitions for the processor flags field. These are bit positions,
+;						as in 1 << hasVMX, and not masks.
+hasL2CR					equ		0
+hasPLRUL1				equ		1
+hasTAU					equ		2
+hasVMX					equ		3
+ProcessorFlags			ds.l	1			; 048 ; flags to specify processor features
 						align	5			; pad to nice cache block alignment
 Size					equ		*
 						endr
