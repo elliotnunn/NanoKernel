@@ -1,6 +1,12 @@
 ; Part of the Init control flow. Really nasty, TBH.
 
 UpdateProcessorInfo
+; G3 and later: skip everything if HWInit passes in Hardware Info
+    lwz     r11, KDP.HWInfo.Signature(r1)
+    lisori  r12, 'Hnfo'
+    cmplw   r12, r11
+    beq     CalculatedProcessorInfo
+
 ; Overwrite some intrinsic CPU properties in our copied ProcessorInfo
     mfpvr   r12
     stw     r12, KDP.ProcInfo.ProcessorVersionReg(r1)
