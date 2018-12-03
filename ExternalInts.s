@@ -705,7 +705,7 @@ ExternalInt7
     li      r2, 3
     bne     @gotnum
 
-    andis.  r2, r3, 0x3FEA      ; all other devices including SCSI, PCI, Audio,
+    andis.  r2, r3, 0x2FEA      ; all other devices including SCSI, PCI, Audio,
     rlwimi. r2, r3, 0, 17, 20   ; Floppy etc. except VIA1
     li      r2, 2               ; will get the priority level 2
     bne     @gotnum
