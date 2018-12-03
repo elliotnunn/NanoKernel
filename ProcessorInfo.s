@@ -594,11 +594,11 @@ HID0SelectTable ; 4x HID0 bit indices: 01=DOZE, 10=NAP, 11=SLEEP
     dc.b    %00011011   ; PVR 5 ???
     dc.b    %00011011   ; PVR 6 603e
     dc.b    %00011011   ; PVR 7 603ev
-    dc.b    %00000011   ; PVR 8
+    dc.b    %00011011   ; PVR 8 750 (G3)
     dc.b    %00001010   ; PVR 9 604e
     dc.b    %00000011   ; PVR A
     dc.b    %00000011   ; PVR B
-    dc.b    %00000011   ; PVR C
+    dc.b    %00011011   ; PVR C 7400 (G4)
     dc.b    %00000011   ; PVR D
     dc.b    %00000011   ; PVR E
     dc.b    %00000011   ; PVR F
@@ -611,11 +611,11 @@ HID0EnableTable ; 0=disable, 1=HID0[NHR], 2=HID0[NHR+DOZE/NAP/SLEEP]
     dc.b    2           ; PVR 5
     dc.b    2           ; PVR 6
     dc.b    2           ; PVR 7
-    dc.b    1           ; PVR 8
+    dc.b    2           ; PVR 8
     dc.b    1           ; PVR 9
     dc.b    1           ; PVR A
     dc.b    1           ; PVR B
-    dc.b    1           ; PVR C
+    dc.b    2           ; PVR C
     dc.b    1           ; PVR D
     dc.b    1           ; PVR E
     dc.b    1           ; PVR F
