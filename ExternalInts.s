@@ -45,6 +45,7 @@ GetExtIntHandler
     dc.w    ExternalInt6 - @table           ; 6
     dc.w    ExternalInt7 - @table           ; 7
     dc.w    ExternalInt8 - @table           ; 8
+    dc.w    ExternalInt9 - @table           ; 9
     align   2
 @tableend
     mflr    r7              ; r7 points to @table now
@@ -398,6 +399,154 @@ ExtIntHandlerAlchemy
     lwz     r2, KDP.ClearIntMask(r1)        ; Clear an interrupt via Cond Reg
     and     r0, r0, r2
     b       @return
+
+########################################################################
+
+    _align kExternalIntAlign
+ExternalInt9
+    mfsprg  r1, 0                           ; Init regs and increment ctr
+    dcbz    0, r1
+    stw     r0, KDP.r0(r1)
+    stw     r2, KDP.r2(r1)
+    lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
+    stw     r3, KDP.r3(r1)
+    addi    r2, r2, 1
+    stw     r2, KDP.NKInfo.ExternalIntCount(r1)
+
+    lis     r2, 0xB300          ; r3 - base address of GrandCentral
+    mfmsr   r0
+    _ori    r3, r0, MsrDR
+    stw     r4, KDP.r4(r1)
+    stw     r5, KDP.r5(r1)
+    stw     r6, KDP.r6(r1)
+    stw     r7, KDP.r7(r1)
+    stw     r8, KDP.r8(r1)
+
+    lisori  r4, 0xF3001004
+    lisori  r5, 0x12345678
+    stw     r5, 0(r4)
+    lisori  r4, 0xF3001000
+    lwz     r5, 0(r4)
+    addi    r5, r5, 1
+    stw     r5, 0(r4)
+    lisori  r4, 0xF3001150
+    stw     r18, 0(r4)          ; prototype ROM int table sets r18/r19?
+    lisori  r4, 0xF3001160
+    stw     r19, 0(r4)
+
+    mfsrr0  r4
+    mfsrr1  r5
+    mtmsr   r3                  ; enable data address translation
+    isync
+    li      r6, 0x20
+    lwbrx   r7, r6, r2
+    rlwinm  r7, r7, 1, 1, 1
+    eieio
+    lis     r3, 0x8000
+    li      r6, 0x28
+    stwbrx  r3, r6, 2
+    eieio
+    li      r6, 0x24
+    lwbrx   r3, r6, r2
+    eieio
+    rlwinm  r8, r3, 1, 1, 1
+    and     r8, r7, r8
+    or      r3, r8, r3
+    stwbrx  r3, r6, r2
+    eieio
+    li      r6, 0x2C
+    lwbrx   r6, r6, r2
+    eieio
+    _mvbit  r6, 1, r3, 1
+    and     r3, r6, r3
+    mtmsr   r0
+    isync
+    mtsrr0  r4
+    mtsrr1  r5
+    lwz     r4, KDP.r4(r1)
+    lwz     r5, KDP.r5(r1)
+    lwz     r6, KDP.r6(r1)
+    lwz     r7, KDP.r7(r1)
+    lwz     r8, KDP.r8(r1)
+
+    mfcr    r0
+
+    lisori  r18, 0xF30010A4
+    stw     r3, 0(r18)
+    andis.  r2, r3, 0x10
+    beq     @l1
+    lisori  r2, 0xF3001070
+    lwz     r3, 0(r2)
+    addi    r3, r3, 1
+    stw     r3, 0(r2)
+@l1
+    li      r2, 7
+    bne     @gotnum
+    rlwinm  r2, r3, 0, 0x00018000
+    rlwimi. r2, r3, 0, 0x000003FF
+    beq     @l2
+    lisori  r2, 0xF3001040
+    lwz     r3, 0(r2)
+    addi    r3, r3, 1
+    stw     r3, 0(r2)
+@l2
+    li      r2, 4
+    bne     @gotnum
+    andis.  r2, r3, 0x018A
+    rlwimi. r2, r3, 0, 0x00007800
+    beq     @l3
+    lisori  r2, 0xF3001020
+    lwz     r3, 0(r2)
+    addi    r3, r3, 1
+    stw     r3, 0(r2)
+@l3
+    li      r2, 2
+    bne     @gotnum
+    andis.  r2, r3, 4
+    beq     @l4
+    lisori  r2, 0xF3001010
+    lwz     r3, 0(r2)
+    addi    r3, r3, 1
+    stw     r3, 0(r2)
+    li      r2, 1
+@l4
+    li      r2, 1
+    bne     @gotnum
+    lisori  r2, 0xF3001080
+    lwz     r3, 0(r2)
+    addi    r3, r3, 1
+    stw     r3, 0(r2)
+    xor     r2, r0, r0
+
+@gotnum
+    lisori  r3, 0xF3001150
+    lwz     r18, 0(r3)
+    lisori  r3, 0xF3001160
+    lwz     r19, 0(r3)
+    lwz     r3, KDP.EmuIntLevelPtr(r1)
+    ori     r2, r2, 0x8000
+    sth     r2, 0(r3)
+    mfsprg  r2, 2
+    lwz     r3, KDP.r3(r1)
+    mtlr    r2
+    beq     @clear                          ; 0 -> clear interrupt
+                                            ; nonzero -> post interrupt
+
+    lwz     r2, KDP.PostIntMask(r1)         ; Post an interrupt via Cond Reg
+    or      r0, r0, r2
+
+@return
+    mtcr    r0                              ; Set CR and return
+    lwz     r0, KDP.r0(r1)
+    lwz     r2, KDP.r2(r1)
+    mfsprg  r1, 1
+    rfi
+
+@clear
+    lwz     r2, KDP.ClearIntMask(r1)        ; Clear an interrupt via Cond Reg
+    and     r0, r0, r2
+    b       @return
+
 
 ########################################################################
 ; This is the handler for external interrupts on the TNT board equipped
