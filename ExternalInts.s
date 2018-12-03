@@ -816,6 +816,10 @@ ExternalInt6
     dcbz    0, r1
     stw     r0, KDP.r0(r1)
     stw     r2, KDP.r2(r1)
+
+    li      r2, 32
+    dcbz    r2, r1
+
     lwz     r2, KDP.NKInfo.ExternalIntCount(r1)
     stw     r3, KDP.r3(r1)
     addi    r2, r2, 1
@@ -827,110 +831,174 @@ ExternalInt6
     stw     r6, KDP.r6(r1)
     stw     r7, KDP.r7(r1)
     stw     r8, KDP.r8(r1)
+    stw     r9, KDP.r9(r1)
 
     mfsrr1  r5
     mfcr    r0
 
     lhz     r7, KDP.IntBlah1(r1)
-    lwz     r2, KDP.SysInfo.IntCntrBaseAddr(r1)
-    addis   r2, r2, 4
+    lwz     r2, KDP.HWInfo.OpenPICBaseAddr(r1)
+    li      r8, 0
     cmpwi   r7, 0
     beq     @lowfirstpmdt
     andis.  r6, r5, 2
     beq     @skipheaps
-    li      r8, 0
+
+    lbz     r9, KDP.HWInfo.CompletedInts+7(r1)
+    stb     r8, KDP.HWInfo.CompletedInts+7(r1)
+
     cmplwi  r7, 1
     ble     @stillnotgood
 
     subi    r7, r7, 1
     addi    r6, r1, KDP.IntBlah2
     add     r6, r6, r7
+
+    cmpwi   r9, 7
+    beq     @xloc_6C28
+
+    addi    r7, r1, KDP.HWInfo.CompletedInts+7
     lbz     r4, 0(r6)
-    lwz     r7, KDP.SysInfo.IntPendingReg(r1)
-    lis     r8, -0x8000
-    srw     r8, r8, r4
-    and.    r7, r7, r8
-    beq     @loc_5A54
+@lp lbzu    r8, -1(r7)
+    cmpw    r4, r8
+    beq     @xloc_6BF4
+    cmpwi   r8, 0xFE
+    bne     @lp
+
     lwz     r8, KDP.EmuIntLevelPtr(r1)
     lhz     r8, 0(r8)
     b       @stillnotgood
 
-@loc_5A54
-    subi    r6, r6, 1
+@xloc_6BF4
+    li      r8, 0xFF
+    stb     r8, 0(r7)
+    addi    r7, r1, KDP.HWInfo.PendingInts
+    lis     r8, 0x8000
+    cmpwi   r4, 0x20
+    blt+    @xloc_6C14
+    addi    r7, r7, 4
+    addi    r4, r4, -0x20
+
+@xloc_6C14
+    srw     r8, r8, r4
+    lwz     r4, 0(r7)
+    andc    r4, r4, r8
+    addi    r6, r6, -1
+    stw     r4, 0(r7)
+
+@xloc_6C28
     lbz     r6, 0(r6)
+    cmpwi   r6, 0xFF
+    beq     @xloc_6C40
+    slwi    r6, r6, 1
+    lhz     r6, 0x3F80(r6)
+    b       @xloc_6C44
+
+@xloc_6C40
+    li      r6, 0x800
+
+@xloc_6C44
     ori     r8, r3, 0x10
-    lis     r7, 2
-    ori     r7, r7, 0xB0
-    add     r7, r7, r2
+    lisori  r7, 0x000200B0
     mfsrr0  r4
     mtmsr   r8
     isync
     li      r8, 0
-    stw     r8, 0(r7)
+    cmpw    r9, r7
+    beq     @xloc_6C70
+    stwx    r8, r2, r7
     eieio
-    cmpwi   r6, -1
-    beq     @loc_5AAC
-    lis     r8, 1
-    ori     r8, r8, 0    
-    add     r8, r8, r2
-    rlwinm  r7, r6, 5,22,31
+
+@xloc_6C70
+    cmpwi   r6, 0x800
+    beq     @xloc_6C90
+    lisori  r8, 0x00010000
+    rlwinm  r7, r6, 5,16,31
     add     r8, r8, r7
-    lwz     r8, 0(r8)
-    extrwi  r8, r8, 4,20
-@loc_5AAC
-    lis     r7, 2
-    ori     r7, r7, 0x80
-    add     r7, r7, r2
-    stwbrx  r8, 0, r7
-    eieio
+    lwbrx   r8, r2, r8
+    extrwi  r8, r8, 4,12
+
+@xloc_6C90
     mtmsr   r3
     isync
     mtsrr0  r4
+    mtsrr1  r5
+    cmpw    r9, r7
+    beq     @stillnotgood
     lhz     r7, KDP.IntBlah1(r1)
-    subi    r7, r7, 1
+    addi    r7, r7, -1
     sth     r7, KDP.IntBlah1(r1)
     b       @stillnotgood
 
 @skipheaps
     ori     r7, r3, 0x10
-    lis     r6, 2
-    ori     r6, r6, 0xA0
-    add     r6, r6, r2
-    lis     r8, 1
-    ori     r8, r8, 0
-    add     r8, r8, r2
+    lisori  r6, 0x000200A0
+    lisori  r8, 0x00010000
+    lhz     r9, KDP.HWInfo.SpuriousIntVect(r1)
     mfsrr0  r4
     mtmsr   r7
     isync
-    lwz     r6, 0(r6)
-    srwi    r6, r6, 24
-    cmplwi  r6, 0x13
-    bge     @loc_5BE4
-    rlwinm  r7, r6, 5,22,31
+    lwbrx   r6, r2, r6
+    clrlwi  r6, r6, 20
+    cmplw   r6, r9
+    beq     @loc_5BE4
+    rlwinm  r7, r6, 5,16,31
     add     r8, r8, r7
-    lis     r7, 2
-    ori     r7, r7, 0x80
-    add     r7, r7, r2
-    lwz     r8, 0(r8)
-    extrwi  r8, r8, 4,20
-    stwbrx  r8, 0, r7
+    lwbrx   r8, r2, r8
+    extrwi  r8, r8, 4,12
+    lisori  r7, 0x000200B0
+    li      r9, 0
+    cmplwi  r8, 7
+    bne+    @xloc_6D18
+    stwx    r9, r2, r7
     eieio
+
+@xloc_6D18
     mtmsr   r3
     isync
     mtsrr0  r4
+    mtsrr1  r5
+    cmplwi  r8, 7
+    bne+    @xloc_6D38
+    stb     r8, KDP.HWInfo.CompletedInts+7(r1)
+    b       @stillnotgood
+
+@xloc_6D38
+    li      r7, 0
+
+@xloc_6D3C
+    lhz     r4, 0x3F80(r7)
+    cmpw    r6, r4
+    beq     @xloc_6D54
+    addi    r7, r7, 2
+    cmpwi   r7, 0x80
+    blt     @xloc_6D3C
+
+@xloc_6D54
+    srwi    r6, r7, 1
     lhz     r7, KDP.IntBlah1(r1)
     add     r4, r7, r1
     addi    r7, r7, 1
     stb     r6, KDP.IntBlah2(r4)
     sth     r7, KDP.IntBlah1(r1)
-    lwz     r7, KDP.SysInfo.IntPendingReg(r1)
+    addi    r7, r1, KDP.HWInfo.PendingInts
+    cmpwi   r6, 0x20
+    blt+    @xloc_6D80
+    addi    r7, r7, 4
+    addi    r6, r6, -0x20
+
+@xloc_6D80
+    lwz     r5, 0(r7)
     lis     r4, -0x8000
     srw     r4, r4, r6
-    or      r7, r7, r4
-    stw     r7, KDP.SysInfo.IntPendingReg(r1)
+    or      r5, r5, r4
+    li      r4, 0xFF
+    stw     r5, 0(r7)
+    addi    r7, r1, KDP.HWInfo.CompletedInts
+    stbx    r4, r8, r7
 @stillnotgood
 
-    mtsrr1  r5
+    lwz     r9, KDP.r9(r1)
     lwz     r7, KDP.r7(r1)
     lwz     r6, KDP.r6(r1)
     lwz     r5, KDP.r5(r1)
@@ -961,14 +1029,12 @@ ExternalInt6
     b       @loc_5BC4
 
 @loc_5BE4
-    lis     r7, 2
-    ori     r7, r7, 0x80
-    add     r7, r7, r2
-    lwz     r8, 0(r7)
-    extrwi  r8, r8, 4, 20
     mtmsr   r3
     isync
     mtsrr0  r4
+    mtsrr1  r5
+    lwz     r7, KDP.EmuIntLevelPtr(r1)
+    lhz     r8, 0(r7)
     b       @stillnotgood
 
 @lowfirstpmdt
@@ -976,6 +1042,9 @@ ExternalInt6
     li      r8, -1
     sth     r7, KDP.IntBlah1(r1)
     stw     r8, KDP.IntBlah2(r1)
+    stw     r8, KDP.HWInfo.CompletedInts+4(r1)
+    xoris   r8, r8, 0x100
+    stw     r8, KDP.HWInfo.CompletedInts(r1)
     li      r8, 0
     b       @stillnotgood
 
