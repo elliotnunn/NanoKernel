@@ -42,9 +42,15 @@ UpdateProcessorInfo
     cmpwi   r12, 9 ; ???
     addi    r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
     beq     ChosenProcessorInfo
+    cmpwi   r12, 10 ; ???
+    beq     ChosenProcessorInfo
 
-    cmpwi   r12, 0x54 ; use 750FX again
-    subi    r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
+    cmpwi   r12, 12 ; ???
+    addi    r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
+    beq     ChosenProcessorInfo
+
+    cmpwi   r12, 96 ; ???
+    addi    r11, r11, 2 * (NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr)
     beq     ChosenProcessorInfo
 
 ########################################################################
@@ -758,6 +764,23 @@ ProcessorInfoTable
     dc.w    0x20        ; DataCacheBlockSize
     dc.w    4           ; InstCacheAssociativity
     dc.w    4           ; DataCacheAssociativity
+    dc.w    0x80        ; TransCacheTotalSize
+    dc.w    2           ; TransCacheAssociativity
+
+; ??? unused
+    dc.l    0x1000      ; PageSize
+    dc.l    0x8000      ; DataCacheTotalSize
+    dc.l    0x8000      ; InstCacheTotalSize
+    dc.w    0x20        ; CoherencyBlockSize
+    dc.w    0x20        ; ReservationGranuleSize
+    dc.w    0           ; CombinedCaches
+    dc.w    0x20        ; InstCacheLineSize
+    dc.w    0x20        ; DataCacheLineSize
+    dc.w    0x20        ; DataCacheBlockSizeTouch
+    dc.w    0x20        ; InstCacheBlockSize
+    dc.w    0x20        ; DataCacheBlockSize
+    dc.w    8           ; InstCacheAssociativity
+    dc.w    8           ; DataCacheAssociativity
     dc.w    0x80        ; TransCacheTotalSize
     dc.w    2           ; TransCacheAssociativity
 

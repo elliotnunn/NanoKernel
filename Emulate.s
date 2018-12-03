@@ -3,6 +3,12 @@ InitEmulation
     _ori    r23, r23, EmAlways1
     _ori    r23, r23, EmAlways2
 
+; Special-case some prototype hardware
+    mfpvr   r18
+    srwi    r18, r18, 16
+    cmpwi   r18, 96
+    beq     noPerfMonEmulation
+
 ; Ignore Program Interrupts so we can blindly hit SPRs
     lwz     r21, KDP.CodeBase(r1)
     lwz     r20, KDP.VecTblSystem.Program(r1)
