@@ -57,3 +57,7 @@ into several useful formats named `NanoKernelBuild*`.
 
 - 1996-11-14 Power Mac 6500
 
+## Gossamer 0
+
+- 1997-11-10 Power Macintosh G3
+
