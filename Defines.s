@@ -21,6 +21,12 @@ kVersion equ 0x0101
 
 ########################################################################
 
+; PowerPC Special Purpose Registers (SPRS) not known by the assembler
+L2CR        equ 1017        ; PowerPC G3
+ICCR        equ 1019        ; PowerPC G3
+
+########################################################################
+
 ; BO field values for "bc" (condition branch) instructions
 BO_IF       equ 12
 BO_IF_NOT   equ 4
@@ -529,10 +535,6 @@ IntBlah2                ds.w    1   ; 912
                         ds.l    1   ; 914
                         ds.l    1   ; 918
                         ds.l    1   ; 91c
-                        ds.l    1   ; 920
-                        ds.l    1   ; 924
-                        ds.l    1   ; 928
-                        ds.l    1   ; 92c
 
 PageMap                             ; whatever is left
 
@@ -557,6 +559,10 @@ SysInfo ds NKSystemInfo
     ORG *-NKHWInfo.Size
 HWInfo ds NKHWInfo
     ORG *-NKHWInfo.Size
+
+    ORG *-NKProcessorState.Size
+ProcState ds NKProcessorState
+    ORG *-NKProcessorState.Size
 
     ORG 0xFC0
 InfoRecBlk              ds.b    64  ; fc0:1000 ; Access using ptr equates in InfoRecords

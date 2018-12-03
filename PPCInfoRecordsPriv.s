@@ -450,3 +450,62 @@ RTAS_Get_PowerOn_Time	ds.l	1			; 098 ; token for RTAS getting time for system st
 						align	5			; pad to nice cache block alignment
 Size					equ		*
 						endr
+
+
+
+
+;_______________________________________________________________________
+;	Processor State Record
+;
+;	Used to save the state of the processor across sleep.
+;_______________________________________________________________________
+
+NKProcessorStatePtr		equ		$5FFFEFC8	; logical address of ProcessorState record
+NKProcessorStateVer		equ		$5FFFEFCC	; version number of ProcessorState record
+NKProcessorStateLen		equ		$5FFFEFCE	; length of ProcessorState record
+
+kProcessorStateVer		equ		$0100
+
+NKProcessorState		record	0,increment
+saveDBAT0u				ds.l	1			; 000 ; place to store DBAT0U
+saveDBAT0l				ds.l	1			; 004 ; place to store DBAT0L
+saveDBAT1u				ds.l	1			; 008 ; place to store DBAT1U
+saveDBAT1l				ds.l	1			; 00c ; place to store DBAT1L
+saveDBAT2u				ds.l	1			; 010 ; place to store DBAT2U
+saveDBAT2l				ds.l	1			; 014 ; place to store DBAT2L
+saveDBAT3u				ds.l	1			; 018 ; place to store DBAT3U
+saveDBAT3l				ds.l	1			; 01c ; place to store DBAT3L
+
+saveIBAT0u				ds.l	1			; 020 ; place to store IBAT0U
+saveIBAT0l				ds.l	1			; 024 ; place to store IBAT0L
+saveIBAT1u				ds.l	1			; 028 ; place to store IBAT1U
+saveIBAT1l				ds.l	1			; 02c ; place to store IBAT1L
+saveIBAT2u				ds.l	1			; 030 ; place to store IBAT2U
+saveIBAT2l				ds.l	1			; 034 ; place to store IBAT2L
+saveIBAT3u				ds.l	1			; 038 ; place to store IBAT3U
+saveIBAT3l				ds.l	1			; 03c ; place to store IBAT3L
+
+saveSPRG0				ds.l	1			; 040 ; place to store SPRG0
+saveSPRG1				ds.l	1			; 044 ; place to store SPRG1
+saveSPRG2				ds.l	1			; 048 ; place to store SPRG2
+saveSPRG3				ds.l	1			; 04c ; place to store SPRG3
+
+saveL2CR				ds.l	1			; 050 ; place to store Arthur's L2CR
+
+saveSRR0				ds.l	1			; 054 ; place to store SRR0
+saveSRR1				ds.l	1			; 058 ; place to store SRR1
+saveTBU					ds.l	1			; 05c ; place to store TBU
+saveTBL					ds.l	1			; 060 ; place to store TBL
+saveHID0				ds.l	1			; 064 ; place to store HID0
+saveDEC					ds.l	1			; 068 ; place to store DEC
+saveMSR					ds.l	1			; 06c ; place to store MSR
+saveSDR1				ds.l	1			; 070 ; place to store SDR1
+
+											; saveKernelDataPtr needs to always be right after saveReturnAddr
+											; because of how the code works.  DO NOT CHANGE THIS ORDERING!
+
+saveReturnAddr			ds.l	1			; 074 ; place to store the addr to jump to.
+saveKernelDataPtr		ds.l	1			; 078 ; place to store the KernelDataPtr
+saveContextPtr			ds.l	1			; 07c ; place to store the ContextPtr
+Size					equ		*
+						endr

@@ -274,9 +274,12 @@ InitInfoRecordPointers
     stw     r12, 0xFC0(r1)
     stw     r0, 0xFC4(r1)
 
-    addi    r12, r11, 0xFC8
-    stw     r12, 0xFC8(r1)
-    stw     r0, 0xFCC(r1)
+    addi    r12, r11, KDP.ProcState
+    stw     r12, NKProcessorStatePtr & 0xFFF(r1)
+    li      r12, kProcessorStateVer
+    sth     r12, NKProcessorStateVer & 0xFFF(r1)
+    li      r12, NKProcessorState.Size
+    sth     r12, NKProcessorStateLen & 0xFFF(r1)
 
     addi    r12, r11, KDP.HWInfo
     stw     r12, NKHWInfoPtr & 0xFFF(r1)
