@@ -8,6 +8,15 @@ FlushCaches
     cntlzw  r8, r25
     subfic  r9, r8, 31                      ; r9 = logb(L1-D line size)
     lwz     r8, KDP.ProcInfo.DataCacheTotalSize(r1)
+
+    lwz     r24, KDP.ProcInfo.ProcessorFlags(r1)
+    andi.   r24, r24, 1 << NKProcessorInfo.hasPLRUL1
+    beq     @noplru
+    slwi    r24, r8, 1
+    add     r8, r8, r24
+    srwi    r8, r8, 1                       ; be generous with pseudo-LRU caches
+@noplru
+
     srw     r8, r8, r9                      ; loop ctr = cache/line
     mtctr   r8
     lwz     r8, KDP.CodeBase(r1)            ; loop base = address in ROM
