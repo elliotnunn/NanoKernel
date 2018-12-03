@@ -125,6 +125,9 @@ ResetKCallTable
     _kaddr  r23, rNK, KCallRTASDispatch
     stw     r23, KCallTbl.RTASDispatch(r8)
 
+    _kaddr  r23, rNK, KCallCacheDispatch
+    stw     r23, KCallTbl.CacheDispatch(r8)
+
     _kaddr  r23, rNK, KCallSystemCrash
     stw     r23, KCallTbl.SystemCrash(r8)
 
