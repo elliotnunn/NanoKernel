@@ -91,19 +91,39 @@ KCallRTASDispatch
     stwx    r9, r8, r3
     li      r9, 0
     sth     r9, 4(r3)
+    dcbf    r8, r3
 
 @something
+    li      r9, 4
+    dcbf    r9, r3
+    sync
+    isync
+
     lwz     r4, KDP.RTASData(r1)
     mfmsr   r8
     andi.   r8, r8, ~(0xFFFF0000|MsrEE|MsrPR|MsrFP|MsrFE0|MsrSE|MsrBE|MsrFE1|MsrIR|MsrDR)
     mtmsr   r8
     isync
 
+    mr      r28, r3
+
     lwz     r9, KDP.RTASDispatch(r1)
     bl      @DO_IT
 
     mfsprg  r1, 0
     lwz     r6, KDP.ContextPtr(r1)
+
+    clrlwi  r29, r28, 20
+    subfic  r29, r29, 0x1000
+    lhz     r27, KDP.ProcInfo.DataCacheBlockSize(r1)
+@rl subf.   r29, r27, r29
+    dcbf    r29, r28
+    sync
+    icbi    r29, r28
+    bge     @rl
+    sync
+    isync
+
     lwz     r8, CB.InterState.Flags(r6)
     lwz     r11, CB.MSR+4(r6)
     mr      r7, r8
