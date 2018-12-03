@@ -325,16 +325,17 @@ ExtIntHandlerAlchemy
     eieio
     li      r6, 0x24
     lwbrx   r3, r6, r2
-    mr      r8, r3
-    rlwinm  r8, r8, 1, 1, 1
+    eieio
+    rlwinm  r8, r3, 1, 1, 1
     and     r8, r7, r8
     or      r3, r8, r3
     stwbrx  r3, r6, r2
+    eieio
     li      r6, 0x2C
     lwbrx   r6, r6, r2
-    or      r6, r7, r6
-    and     r3, r6, r3
     eieio
+    _mvbit  r6, 1, r3, 1
+    and     r3, r6, r3
     mtmsr   r0
     isync
     mtsrr0  r4
@@ -351,21 +352,13 @@ ExtIntHandlerAlchemy
     li      r2, 7
     bne     @gotnum
 
-    andi.   r2, r3, 0x83FF                  ; bit 15-16/22-31 -> 4
-    li      r2, 4
-    bne     @gotnum
-    andis.  r2, r3, 1
+    rlwinm  r2, r3, 0, 0x00018000           ; bit 15-16/22-31 -> 4
+    rlwimi. r2, r3, 0, 0x000003FF
     li      r2, 4
     bne     @gotnum
 
-    andis.  r2, r3, 0x1FCA                  ; bit 3-9/12/14/17-20 -> 2
-    li      r2, 2
-    bne     @gotnum
-    andi.   r2, r3, 0x7800
-    li      r2, 2
-    bne     @gotnum
-
-    andis.  r2, r3, 0x4000                  ; bit 17 -> 2
+    andis.  r2, r3, 0x5FCA                  ; bit 1/3-10/12/14/17-20 -> 2
+    rlwimi. r2, r3, 0, 0x00007800
     li      r2, 2
     bne     @gotnum
 
