@@ -190,5 +190,6 @@ SetMSRFlush
     isync
     mflr    r23
     icbi    0, r23
+    sync
     isync
     blr

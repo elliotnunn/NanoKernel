@@ -136,6 +136,7 @@ UpdateProcessorInfo
     lwzu    r12, -4(r11)
     stwu    r12, -4(r20)
     dcbst   0, r20
+    sync
     icbi    0, r20
     bdnz    @mangle2
     sync
@@ -292,6 +293,7 @@ new_world_0x890
     dcbst   0, r21              ; Flush D/I cache and run the code
     sync
     icbi    0, r21
+    sync
     isync
     mtlr    r21
     blrl
@@ -317,6 +319,7 @@ new_world_0x924
     lwzu    r12, -0x0004(r11)
     stwu    r12, -0x0004(r20)
     dcbst   0, r20
+    sync
     icbi    0, r20
     bdnz    new_world_0x924
     sync
@@ -339,6 +342,7 @@ new_world_0x968
     cmpw    r12, r13
     stwu    r9, -0x0004(r11)
     dcbst   0, r12
+    sync
     icbi    0, r12
     bne     new_world_0x968
     sync
@@ -394,6 +398,7 @@ new_world_0xa10
     stwu    r9, -0x0200(r12)
     cmpw    r12, r13
     dcbst   0, r12
+    sync
     icbi    0, r12
     bne     new_world_0xa10
     sync
@@ -417,6 +422,7 @@ new_world_0xa54
     stwx    r10, r12, r14
     stwu    r9,  0x0004(r11)
     dcbst   r12, r14
+    sync
     icbi    r12, r14
     addi    r14, r14,  0x04
     lwzx    r9, r12, r14
@@ -425,6 +431,7 @@ new_world_0xa54
     stwx    r10, r12, r14
     stwu    r9,  0x0004(r11)
     dcbst   r12, r14
+    sync
     icbi    r12, r14
     bne     new_world_0xa54
     cmpw    r12, r13

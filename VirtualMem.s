@@ -630,6 +630,7 @@ vmFlushPageAndReturn ; When making page write-though or noncacheable
     subf.   r7, r8, r7
     dcbf    r7, r4
     dcbf    r7, r5
+    sync
     icbi    r7, r4
     icbi    r7, r5
     bne     @loop
@@ -1099,6 +1100,8 @@ SaveLowerPTE
     sync
     tlbie   r8
     sync    
+    tlbsync
+    sync
 
     blr
 
