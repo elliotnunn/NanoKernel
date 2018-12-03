@@ -1,6 +1,7 @@
 FlushCaches
     mfctr   r8
     stw     r25, CB.r25+4(r6)               ; used for cache size
+    stw     r24, CB.r24+4(r6)
     stw     r8, CB.CTR+4(r6)
 
 ; L1
