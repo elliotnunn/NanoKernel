@@ -100,7 +100,7 @@ NKSystemInfoPtr			equ		$5FFFEFF0	; logical address of NKSystemInfo record
 NKSystemInfoVer			equ		$5FFFEFF4	; version number of NKSystemInfo record
 NKSystemInfoLen			equ		$5FFFEFF6	; length of NKSystemInfo record
 
-kSystemInfoVer			equ		$0104
+kSystemInfoVer			equ		$0105
 
 NKSystemInfo			record	0,increment
 PhysicalMemorySize		ds.l	1			; 000 ; Number of bytes in Physical RAM

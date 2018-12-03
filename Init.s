@@ -64,16 +64,23 @@ ClearSPRs
 TrimFirstBank
 ; Waste physical pages so that logi 0 = phys PA_RelocatedLowMemInit
     lwz     r12, NKConfigurationInfo.PA_RelocatedLowMemInit(rCI)
-    lwz     r11, NKSystemInfo.Bank0Size(rSI)
-    subf    r10, r12, r11       ; only if bank 0 is not already too high
-    srawi   r10, r10, 31
-    andc    r12, r12, r10
-    subf    r11, r12, r11
-    stw     r11, NKSystemInfo.Bank0Size(rSI)
 
-    lwz     r11, NKSystemInfo.Bank0Start(rSI)
+    addi    r10, rSI, NKSystemInfo.Bank0Start-4 ; new in G3:
+@loop                                           ; ignore empty banks
+    lwzu    r11, 8(r10) ; bank size
+    cmpwi   r11, 0
+    beq     @loop
+
+    subf    r11, r12, r11       ; only if bank 0 is not already too high
+    srawi   r11, r11, 31
+    andc    r12, r12, r11
+    lwz     r11, 0(r10) ; bank size
+    subf    r11, r12, r11
+    stw     r11, 0(r10)
+
+    lwz     r11, -4(r10) ; bank start
     add     r11, r11, r12
-    stw     r11, NKSystemInfo.Bank0Start(rSI)
+    stw     r11, -4(r10)
 
     lwz     r11, NKSystemInfo.PhysicalMemorySize(rSI)
     subf    r11, r12, r11
